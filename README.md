@@ -42,6 +42,8 @@ Yes, 1888 FreeBoot patches are now a thing!
 > * Provide a solution for xbox games. atm no way to toggle the memory protection, might need to make a version of https://github.com/FreeMyXe/FreeMyXe/tree/master/extras/OGXboxPrep with the correct memory protection address
 > * devkit encrypted xex support
 > * Need to port Byrom's dashlaunch substitute so we can have nice things like plugins and memory protection toggling
+>
+> And for what it's worth, it's a very early kernel so a lot of homebrew WON'T work. XeLLLaunch2, Simple 360 NAND Flasher, and Xexmenu are basically all that i've got working so far. Anything that requires HvxExpansion or peek/poke backdoors that are NOT based on syscall 0 won't work. I'd need to reimplement those syscalls.
 
 - Consoles: All phats
 - Hack Type: DevGL and Glitch2m
