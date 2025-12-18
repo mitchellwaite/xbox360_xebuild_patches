@@ -87,7 +87,7 @@ MAKEPATCH 0X4f30
    lbz     %r4, 0x4D(%r5)
    isync
    cmplwi  %r4, 0
-   beq     smc_init 
+   beq     smc_init
 
 # Enable UART
    lis     %r3, -0x51FF # 0xAE010000 -> set UART to 38400, 8, N, 1 (CYGNOS compatible??? this is what XeLL sets the reg to in cygnos mode)
@@ -95,7 +95,7 @@ MAKEPATCH 0X4f30
    ori     %r4, %r4, 0x200   
    sldi    %r4, %r4, 32
    oris    %r4, %r4, 0xEA00 # 0x80000200 0xEA00101C is the UART config register
-   stw     %r3, 0x101C(%r4) 
+   stw     %r3, 0x101C(%r4)
 
 # SMC handshake
 smc_init:            
@@ -201,6 +201,11 @@ load_xell:
 # all we get is the 16 bit li instruction so we get the rigamarole to load a 64-bit
 # value into the register to point to the memory mapped location where XeLL lives
 # Assembly is fun!
+
+# Used if we're using SD 17489 to boot CE 1888
+   .ifdef xell_C807
+   .set xell_offset, 0xC807
+   .endif
 
 # 16mb/64mb SB/Corona BB: 0xF0000
    .ifdef xell_C80F
