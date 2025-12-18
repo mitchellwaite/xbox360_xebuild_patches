@@ -488,6 +488,60 @@ KMAKEPATCH 0x800C0690
 # For now forget about it, that can come in V2 of the patch
 #
 
+#============================================================================
+# During Phase1 initialization, after we've loaded xam.xex, branch to free
+# space so we can load launch.xex. This is a bit simpler of a function
+# compared to what 17559 does... this is closer to what RGLoader does.
+#
+# We've patched out XeKeysConsoleSignatureVerification, so address 0x800BC0EC
+# to address 0x800BC208 is effectively free for our use.
+#============================================================================
+.set Phase1PatchAddress, 0x80050C34
+.set XeKeysFreeSpace, 0x800BC0EC
+.set XexLoadImage, 0x80065A18
+
+# Phase1PatchAddress
+KMAKEPATCH 0x80050C34
+0:
+   # Jump to the code after the string for the launch.xex path
+   KMAKEBRANCH (XeKeysFreeSpace + 0x1C)
+9:
+
+KMAKEPATCH XeKeysFreeSpace
+0:
+   #
+   # \\Device\\Flash\\launch.xex
+   #
+   .long 0x5C446576    
+   .long 0x6963655C    
+   .long 0x466C6173    
+   .long 0x685C6C61    
+   .long 0x756E6368    
+   .long 0x2E786578
+   .long 0
+
+   # Load launch.xex
+   lis %r11, XeKeysFreeSpace@h
+   ori %r3, %r11, XeKeysFreeSpace@l
+	lis %r5, 0               # Set r5 (MinimumVersion)
+	li %r4, 0               # Set r4 (ModuleTypeFlags) - 1st half
+	ori %r4, %r4, 8         # Set r4 (ModuleTypeFlags) - 2nd half
+	li %r6, 0                # Set r6 (pHandle)
+   KMAKEBRANCHL XexLoadImage
+
+   # Optional: If we fail to load launch.xex,
+   # branch back to the bit of code that throws an E79
+   # (Failure to load xam.xex)
+   # cmpwi %r3, 0
+   # bge 0x8
+   # KMAKEBRANCH (Phase1PatchAddress - 0xC)
+
+   # Do the instruction that the Phase1Initialization patch replaced
+   # then branch back to the last instruction of Phase1Initialization
+   li %r3, 0
+   KMAKEBRANCH (Phase1PatchAddress + 0x4)
+9:
+
 .ifdef patch_gpu
 #============================================================================
 # Patch VdpOneTimeDeviceInitialize to spoof the GPU ID to avoid E78
