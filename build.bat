@@ -23,6 +23,8 @@ call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_trinitybb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_coronabb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_devkit
 
+call:buildPatchSection src\KHV\17559 khv_17559_vfuses
+
 echo Done!
 
 echo.
@@ -33,6 +35,8 @@ call:buildPatchSection src\4BL\17489 sd_vfuses_sb
 call:buildPatchSection src\4BL\17489 sd_vfuses_devkit
 call:buildPatchSection src\4BL\17489 sd_shadowboot
 
+call:buildPatchSection src\4BL\9452 cd_9452_vfuses
+
 echo Done!
 
 echo.
@@ -40,6 +44,9 @@ echo Building 2BL patch files...
 
 call:buildPatchSection src\2BL\14352 sb_vfuses
 call:buildPatchSection src\2BL\14352 sb_shadowboot
+
+call:buildPatchSection src\2BL\5772 cbb_5772_vfuses
+call:buildPatchSection src\2BL\6752 cbb_6752_vfuses
 
 echo Done!
 
@@ -99,19 +106,28 @@ copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_devkit.bin + src\K
 
 echo Done!
 
+echo 17559 FreeBoot...
+
+mkdir output\17559
+
+copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mjasper.bin
+copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mfalcon.bin
+
+REM *** Xenon and Zephyr use the 5772 CB_B, same as falcon, so the patch sets are the same
+
+copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mxenon.bin
+copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mzephyr.bin
+
+REM *** TODO add Xenon_ELPIS that uses 7378 BL here!
+
+echo Done!
 
 echo.
 echo SHA256 hashes:
 echo.
-certutil -hashfile "output\17489_XDKBuild\patches_g2mjasper.bin" SHA256
+certutil -hashfile "output\17559\patches_g2mjasper.bin" SHA256
 echo.
-certutil -hashfile "output\17489_XDKBuild\patches_g2mjasper_flash.bin" SHA256
-echo.
-certutil -hashfile "output\17489_XDKBuild\patches_g2mtrinity_flash.bin" SHA256
-echo.
-certutil -hashfile "output\17489_XDKBuild\patches_g2mcorona_flash.bin" SHA256
-echo.
-certutil -hashfile "output\17489_XDKBuild\patches_devjasper.bin" SHA256
+certutil -hashfile "output\17559\patches_g2mfalcon.bin" SHA256
 echo.
 
 echo.

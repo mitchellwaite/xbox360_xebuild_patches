@@ -23,6 +23,15 @@ Unless otherwise noted, DevGL and Glitch2m patch sets use the same patch sets. C
 - Kernel: 17489
 - Notes: Requires [RGLoader.xex](https://github.com/mitchellwaite/RGLoader-XEX) and ini in flash. 16mb consoles require the 17489-dev folder under HDD:\filesystems.
 
+### 17559
+
+- Consoles: All phats
+- Hack Type: DevGL and Glitch2m
+- 2BL: 6752 (Jasper), 5772 (Falcon, Zephyr, Xenon), 7378 (Elpis)
+- 4BL: 9452
+- Kernel: 17559
+- Notes:
+
 ## Credits
 
 - RGLoader.xex - originally by tydye81 and Team Xecuter, source released by Visual Studio
