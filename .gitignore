@@ -1,3 +1,4 @@
 /output
 /tools/output
 **/__pycache__/
+src/**/*.bin
