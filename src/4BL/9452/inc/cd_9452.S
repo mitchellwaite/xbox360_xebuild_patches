@@ -2,16 +2,19 @@
 
 .include "macros.S"
 
+# Branch destination 0x4F20 (aka CDXell)
 MAKEPATCH 0x0000028C
 0:
 	bl 0x4C94
 9:
 
+# Before booting the kernel, jump to the patch engine at 0x51EC
 MAKEPATCH 0x000005B4
 0:
 	b 0x4C38
 9:
 
+# NOPs out a bne
 MAKEPATCH 0x00000830
 0:
 	nop
@@ -19,8 +22,6 @@ MAKEPATCH 0x00000830
 
 MAKEPATCH 0x00004F20
 0:
-
-pci_init:
 	li %r5, 0x200
 	oris %r5, %r5, 0x8000
 	sldi %r5, %r5, 0x20
@@ -98,8 +99,8 @@ load_xell:
 	sldi %r3, %r3, 0x38
 	std %r3, 0(%r7)
 
-# Not sure what this does tbh... will figure it out
-	bl sub_509C
+# Do the PCI init before booting XeLL
+	bl pci_init
 
 # Construct the address to XeLL in the memory mapped NAND space
 # XeLL offset in NAND is different for each console type
@@ -160,7 +161,7 @@ xell_copy_loop:
 	mtspr 0x1a, %r9
 	rfid
 
-sub_509C:
+pci_init:
 	lis %r3, -0x8000
 	ori %r3, %r3, 0x17c
 	sldi %r3, %r3, 0x20
@@ -350,10 +351,12 @@ loc_5280:
 	rfid
 
 .ifdef vfuses
+loc_5290:
 	ori %r10, %r10, 0x1e
 	or %r11, %r11, %r10
 	blr
 
+loc_529C:
 	ori %r28, %r28, 0x1e
 	or %r11, %r11, %r28
 	blr
@@ -374,10 +377,14 @@ MAKEPATCH 0x00000920
 	add %r4, %r3, %r5
 	mr %r3, %r10
 	li %r5, 0xc
-	bl 0x550
-	nop
+	bl 0x550 # Jumps to subroutine at 0xE90
+	nop      # NOP out a branch so we continue along
 9:
 
+#============================================================================
+# NOP out panic 0xB6 (DECODE_FUSES)
+# What was the point of reading the virtual fuses earlier? Who knows
+#============================================================================
 MAKEPATCH 0x00000990
 0:
 	nop
@@ -385,12 +392,12 @@ MAKEPATCH 0x00000990
 
 MAKEPATCH 0x00000E54
 0:
-	bl 0x443c
+	bl 0x443c # Branches to loc_5290 that we defined earlier for fuse fixing
 9:
 
 MAKEPATCH 0x000008C4
 0:
-	bl 0x49D8
+	bl 0x49D8 # Branches to loc_529C that we defined earlier for fuse fixing
 9:
 .endif
 
