@@ -37,12 +37,7 @@ Unless otherwise noted, DevGL and Glitch2m patch sets use the same patch sets. C
 Yes, 1888 FreeBoot patches are now a thing!  
 
 [!IMPORTANT]
-1888 patches are in progress. There's a few things that don't work yet, namely:
-    * 3rd party hard drives. console hangs on boot with the hdd security patch enabled + a hard drive plugged in
-    * Original xbox games. No way to toggle the memory protection, might need to make a version of https://github.com/FreeMyXe/FreeMyXe/tree/master/extras/OGXboxPrep with the correct memory protection address?
-    * usbdsec patch. need to get around to it
-    * devkit encrypted xex support. need to get around to it.
-    * Need to port Byrom's dashlaunch substitute so we can have nice things like plugins and memory protection toggling
+1888 patches are in progress. There's a few things that don't work yet.
 
 - Consoles: All phats
 - Hack Type: DevGL and Glitch2m
@@ -50,6 +45,14 @@ Yes, 1888 FreeBoot patches are now a thing!
 - 4BL: 9452 (modified to ignore patch slots)
 - Kernel: 1888
 - Notes: GPU patches are different for each console type. Zephyr with Y1 should create a xenon image. Boards with a Zeus or Kronos should create a jasper image.
+
+#### TODO
+
+* Disable auth for 3rd party hard drives
+* Provide a solution for xbox games. No way to toggle the memory protection, might need to make a version of https://github.com/FreeMyXe/FreeMyXe/tree/master/extras/OGXboxPrep with the correct memory protection address?
+* usbdsec patch
+* devkit encrypted xex support
+* Need to port Byrom's dashlaunch substitute so we can have nice things like plugins and memory protection toggling
 
 ## Credits
 
