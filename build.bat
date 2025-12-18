@@ -41,8 +41,6 @@ call:buildPatchSection src\4BL\17489 sd_shadowboot
 
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
 
-call:buildPatchSection src\4BL\9452 cd_9452_for1888
-
 echo Done!
 
 echo.
@@ -133,9 +131,9 @@ echo 1888 FreeBoot...
 
 mkdir output\1888
 
-copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_for1888.bin + src\KHV\1888\khv_1888_vfuses_zeus.bin output\1888\patches_g2mjasper.bin
-copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_for1888.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mfalcon.bin
-copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_for1888.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mxenon.bin
+copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_zeus.bin output\1888\patches_g2mjasper.bin
+copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mfalcon.bin
+copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mxenon.bin
 
 REM *** Zephyr uses the 5772 CB_B and zephyr B/C use the same GPU as falcon, so the patch sets are the same
 copy output\1888\patches_g2mfalcon.bin output\1888\patches_g2mzephyr.bin
