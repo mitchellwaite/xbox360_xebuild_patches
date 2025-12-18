@@ -118,13 +118,11 @@ mkdir output\17559
 
 copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mjasper.bin
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mfalcon.bin
+copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mxenon_ELPIS.bin
 
 REM *** Xenon and Zephyr use the 5772 CB_B, same as falcon, so the patch sets are the same
-
 copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mxenon.bin
 copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mzephyr.bin
-
-REM *** TODO add Xenon_ELPIS that uses 7378 BL here!
 
 echo Done!
 
@@ -143,7 +141,8 @@ copy output\1888\patches_g2mfalcon.bin output\1888\patches_g2mzephyr.bin
 REM *** Zephyr A with Y1 uses the same GPU and 5772 CB as Xenon. If an elpis has been installed... bascially just a zephyr C
 copy output\1888\patches_g2mxenon.bin output\1888\patches_g2mzephyr_y1.bin
 
-REM *** TODO add Xenon_ELPIS that uses 7378 BL here!
+REM *** Elpis is basically just a fancy Rhea GPU, so the kernel patch can be the same. Use 7378 loader to avoid Samsung + Rhea hwinit issues
+copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mxenon_ELPIS.bin
 
 echo Done!
 

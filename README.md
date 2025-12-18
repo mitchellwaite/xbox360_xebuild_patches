@@ -40,7 +40,6 @@ Yes, 1888 FreeBoot patches are now a thing!
 > 1888 patches are in progress. There's a few things that don't work yet, namely:
 > * 3rd party hard drives (auth patch causes console to hang when a drive is plugged in, even an original one)
 > * Provide a solution for xbox games. atm no way to toggle the memory protection, might need to make a version of https://github.com/FreeMyXe/FreeMyXe/tree/master/extras/OGXboxPrep with the correct memory protection address
-> * usbdsec patch
 > * devkit encrypted xex support
 > * Need to port Byrom's dashlaunch substitute so we can have nice things like plugins and memory protection toggling
 
@@ -50,6 +49,12 @@ Yes, 1888 FreeBoot patches are now a thing!
 - 4BL: 9452 (modified to ignore patch slots)
 - Kernel: 1888
 - Notes: GPU patches are different for each console type. Zephyr with Y1 should create a xenon image. Boards with a Zeus or Kronos should create a jasper image.
+
+### USB Device Patch
+
+Look under `include/usbdsec.S`, it contains a version of the usbdsec patch (i.e. what you select in JRunner to allow 3rd party Xinput devices) that works with 17559, 17489, and 1888 among others.
+
+Original source: https://github.com/InvoxiPlayGames/UsbdSecPatch/blob/master/UsbdSecPatchXeBuild.s
 
 ## Credits
 
