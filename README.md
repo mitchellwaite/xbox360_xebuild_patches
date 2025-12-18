@@ -45,4 +45,7 @@ Unless otherwise noted, DevGL and Glitch2m patch sets use the same patch sets. C
 - [GoobyCorp/Xbox-360-Crypto (patch decompiler, BL patching code)](https://github.com/GoobyCorp/Xbox-360-Crypto)
 - https://web.archive.org/web/20180513003510/http://www.razielconsole.com/forum/guide-e-tutorial-xbox-360/945-[x360-reversing]-chapter-2-cd-patches.html
 - https://github.com/g91/XBLS/blob/master/Research/code/1bl_583.c#L9
-
+- wurthless-electroniks for modern_loadfare CB patching project and the xeBuild patch diff tool
+- 15432 for posting the pre-made glitch2m images on the 360hub discord. Without this, my ffffffalcon would be fffffried and only able to run XDKbuild. The patches are mostly based on what is included in those images.
+- Unknown???? Whoever created the DevGL patches for 17559 that are currently floating around. I'll add credits here if i figure out who wrote them
+- XDKbuild and RGLoader for their open source SB/SD/Kernel patches, which are a great reference.
