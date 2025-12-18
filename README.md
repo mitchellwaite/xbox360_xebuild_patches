@@ -1,17 +1,27 @@
 # xbox360_xebuild_patches
 Repository of glitch2, DevGL, and Glitch2m patch sources for various xbox 360 dashboard versions
 
-## Support Matrix
+## What's Supported?
 
 Unless otherwise noted, DevGL and Glitch2m patch sets use the same patch sets. Creation of 64mb DevGL images requires a version of J-Runner newer than 3.3.0 R4.
 
-| Dashboard      | Hack Type | 2BL   | 4BL   | Kernel | Xenon | Zephyr | Falcon | Jasper | Trinity | Corona | Notes |
-|----------------|-----------|-------|-------|--------|-------|--------|--------|--------|---------|--------|-------|
-| 17489_RGLoader | Glitch2m  | 14352 | 17489 | 17489  | ✅   | ✅     | ✅     | ✅    | ✅      | ✅    | Requires RGLoader.xex and RGLoader.ini in flash, 16mb requires an appropriate filesystem on the hard drive |
-| 17489_RGLoader | DevGL     | 10375 | 17489 | 17489  | ✅   | ✅     | ✅     | ✅    | ✅      | ✅    |       |
-| 17489_XDKBuild | Glitch2m  | 14352 | 17489 | 17489  | ✅   | ✅     | ✅     | ✅    | ✅      | ✅    | 16mb requires an appropriate filesystem on the hard drive |
-| 17489_XDKBuild | DevGL     | 10375 | 17489 | 17489  | ✅   | ✅     | ✅     | ✅    | ✅      | ✅    |       |
+### 17489 XDKBuild
 
+- Consoles: All
+- Hack Type: DevGL and Glitch2m
+- 2BL: 14352 (Glitch2m), 10375 (DevGL)
+- 4BL: 17489
+- Kernel: 17489
+- Notes: 16mb consoles require the XDKBuild filesystem folder on the root of the hard drive
+
+### 17489 RGLoader
+
+- Consoles: All
+- Hack Type: DevGL and Glitch2m
+- 2BL: 14352 (Glitch2m), 10375 (DevGL)
+- 4BL: 17489
+- Kernel: 17489
+- Notes: Requires [RGLoader.xex](https://github.com/mitchellwaite/RGLoader-XEX) and ini in flash. 16mb consoles require the 17489-dev folder under HDD:\filesystems.
 
 ## Credits
 
