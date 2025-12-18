@@ -52,6 +52,8 @@ call:buildPatchSection src\2BL\14352 sb_shadowboot
 call:buildPatchSection src\2BL\5772 cbb_5772_vfuses
 call:buildPatchSection src\2BL\6752 cbb_6752_vfuses
 
+call:buildPatchSection src\2BL\7378 cbb_7378_vfuses
+
 echo Done!
 
 echo.
