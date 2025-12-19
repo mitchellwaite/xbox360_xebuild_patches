@@ -532,9 +532,9 @@ KMAKEPATCH XeKeysFreeSpace
    # Optional: If we fail to load launch.xex,
    # branch back to the bit of code that throws an E79
    # (Failure to load xam.xex)
-   # cmpwi %r3, 0
-   # bge 0x8
-   # KMAKEBRANCH (Phase1PatchAddress - 0xC)
+   cmpwi %r3, 0
+   bge 0x8
+   KMAKEBRANCH (Phase1PatchAddress - 0xC)
 
    # Do the instruction that the Phase1Initialization patch replaced
    # then branch back to the last instruction of Phase1Initialization
