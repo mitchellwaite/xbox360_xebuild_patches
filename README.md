@@ -39,6 +39,7 @@ Yes, 1888 FreeBoot patches are now a thing!
 > [!IMPORTANT]
 > 1888 patches are in progress. There's a few things that don't work yet, namely:
 > * 3rd party hard drives (auth patch causes console to hang when a drive is plugged in, even an original one)
+> * Devkit encrypted xex'es
 > * We've got a DashLaunch substitute, but anything that hooks xam appears to crash the console (kernel hooks are fine though??? halo 2 works fine). Sorurces, based on Byrom90's DashLaunch for 6770: https://github.com/mitchellwaite/BladesDL/tree/for1888
 >
 > And for what it's worth, it's a very early kernel so a lot of homebrew WON'T work. XeLLLaunch2, Simple 360 NAND Flasher, and Xexmenu are basically all that i've got working so far. Anything that requires HvxExpansion or peek/poke backdoors that are NOT based on syscall 0 won't work. I'd need to reimplement those syscalls.
