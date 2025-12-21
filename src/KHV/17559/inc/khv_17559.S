@@ -495,6 +495,16 @@ MAKEPATCH 0x000264F0
 # 	Something related to xex aes key for dev signed support???
 # 	Fixes bad signature
 #	Overwrites the status STATUS_IMAGE_CHECKSUM_MISMATCH - C0000221
+#
+# All this patch does is allow for devkit signed xex files
+# as a fallback if the call to XeCryptBnQwBeSigVerify fails (rc = 0).
+#
+# To allow for unsigned retail xex support on retail kernels, DashLaunch hooks
+# XexpLoadImage and XexpVerifyXexHeaders and pokes the instruction in the
+# HV to change the fallback decryption key
+#
+# (Look in the DashLaunch changelog- these hooks were added in V3.0)
+#
 # ============================================================================
 # 00 02 9B 08 00 00 00 0E 2B 3C 00 00 41 9A 00 30 2F 03 00 00 40 9A 00 10
 # 38 80 00 F0 48 00 00 18 60 00 00 00 2B 1D 00 00 38 9F 04 40 40 9A 00 08 
@@ -504,8 +514,10 @@ MAKEPATCH 0x00029B08
    # This section overwrites a check on the return value of XeCryptBnQwBeSigVerify disabling STATUS_IMAGE_CHECKSUM_MISMATCH - C0000221
 	cmpldi cr6, %r28, 0         # Value set from r4 being passed to main function being patched
 	beq cr6, loc_29b3c         # Branch if zero. This is how it's handled by the function normally when XeCryptBnQwBeSigVerify returns non-zero
+
 	cmpwi cr6, %r3, 0           # Check the return value of XeCryptBnQwBeSigVerify performed just before these patches
 	bne cr6, loc_29B24         # Branch when non-zero
+
 	li %r4, 0xf0                # Address of Devkit XEX2 AES key that has been set to all zero.
 	b loc_29b34
 	nop

@@ -19,6 +19,7 @@
 .set FixFusesAddr, 0xFAD4
 .set HV_setmemprot, 0x1580
 .set HV_PP_Syscall0, 0xFB00
+.set HV_DevkitXexKeyCheck, 0x1620
 
 # ============================================================================
 #	Branch to HV flag fixer function
@@ -369,34 +370,68 @@ MAKEPATCH 0x00008AF8
 9:
 
 # ============================================================================
-# Bypasses C0000221 STATUS_IMAGE_CHECSUM_MISMATCH by replacing the call to
-# XeCryptBnQwBeSigVerify with a "i returned true" instruction
-# Devkit XEX support would go here too, but like... eh use xextool one day
-# i'll figure that out
+# Bypasses C0000221 STATUS_IMAGE_CHECSUM_MISMATCH in HvxCreateImageMapping
+#
+# All this patch does is allow for devkit signed xex files
+# as a fallback if the call to XeCryptBnQwBeSigVerify fails (rc = 0).
+#
+# To allow for unsigned retail xex support on retail kernels, launch.xex hooks
+# XexpLoadImage and XexpVerifyImageHeaders and pokes the instruction in the
+# HV to change the fallback decryption key
+#
+# (this is exactly what DashLaunch does on regular kernels)
+#
+# If the patches are changed, 
+#
 # ============================================================================
-MAKEPATCH 0x000031C4
+
+# ============================================================================
+# Rather than saving registers r21-r31 on the stack, we'll save r20 as well
+# and will use r20 to persist the result of the XeCryptBnQwBeSigVerify call
+# ============================================================================
+MAKEPATCH 0x30AC
 0:
-   li %r3, 1
+   MAKEBRANCHL 0xE518
 9:
 
 # ============================================================================
-# 	HvxImageTransformImageKey - Disables a conditional branch
-# TODO doesn't exist in 1888?
+# We've got to restore r20 - r31 as well
 # ============================================================================
-# 00 02 B7 78 00 00 00 01 60 00 00 00
-#MAKEPATCH 0x0002B778
-#0:
-#	nop
-#9:
+MAKEPATCH 0x3648
+0:
+   MAKEBRANCHL 0xE568
+9:
 
 # ============================================================================
-# 	HvxCreateImageMapping hash check
+# Save the return value of XeCryptBnQwBeSigVerify and then skip the branch
+# to the code that sets STATUS_IMAGE_CHECKSUM_MISMATCH - C0000221
 # ============================================================================
-# 00 02 CA E8 00 00 00 01 38 60 00 00
-#MAKEPATCH 
-#0:
-#	li %r3, 0
-#9:
+MAKEPATCH 0x000031C8
+0:
+   mr %r20, %r3
+   b 0x10
+9:
+
+# ============================================================================
+# Replace the "li r4, 0x54" at 0x35A0 with a branch to a function
+# that will check the value in r20 set the devkit XEX key as needed
+# ============================================================================
+MAKEPATCH 0x000035A0
+0:
+   MAKEBRANCH HV_DevkitXexKeyCheck
+9:
+
+MAKEPATCH HV_DevkitXexKeyCheck
+0:
+   li %r4, 0x54
+   cmpwi cr6, %r20, 0   # Check if the result from XeCryptBnQwBeSigVerify was 0
+   bne cr6, done
+   li %r4, 0xF0         # If it was zero, set the address of the devkit xex key
+                        # This instruction is the DWORD at 0x162C, if the code
+                        # is modified, launch.xex must be updated!
+done:
+   MAKEBRANCH 0x35A4   # the next instruction that would have run
+9:
 
 # ============================================================================
 # 	HvxCreateImageMapping HV XEX region check 

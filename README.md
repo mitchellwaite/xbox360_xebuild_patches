@@ -39,11 +39,10 @@ Yes, 1888 FreeBoot patches are now a thing!
 > [!IMPORTANT]
 > 1888 patches are in progress. There's a few things that don't work yet, namely:
 > * 3rd party hard drives (auth patch causes console to hang when a drive is plugged in, even an original one)
-> * Devkit encrypted xex'es
 > 
-> We've got a DashLaunch substitute based on Byrom90's DashLaunch for 6770: https://github.com/mitchellwaite/BladesDL/tree/for1888, so things like the memory protection toggle for OG xbox games, ping patch, and liveblock work. No plugins, yet.
+> We've got a DashLaunch substitute based on Byrom90's DashLaunch for 6770: https://github.com/mitchellwaite/BladesDL/, so things like the memory protection toggle for OG xbox games, ping patch, liveblock, and automatically toggling the fallback xex key for having both dev and retail unsigned xex'es 
 >
-> And for what it's worth, it's a very early kernel so a lot of homebrew WON'T work. XeLLLaunch2, Simple 360 NAND Flasher, and Xexmenu are basically all that i've got working so far. Anything that requires HvxExpansion or peek/poke backdoors that are NOT based on syscall 0 won't work. I'd need to reimplement those syscalls.
+> And for what it's worth, it's a very early kernel so  some homebrew won't work. Anything that requires HvxExpansion or peek/poke backdoors that are NOT based on syscall 0 won't work. I'd need to reimplement those syscalls.
 
 - Consoles: All phats
 - Hack Type: DevGL and Glitch2m
