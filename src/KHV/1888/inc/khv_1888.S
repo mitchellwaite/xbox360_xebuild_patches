@@ -512,11 +512,11 @@ KMAKEPATCH 0x800C0690
 #=============================================================================
 # Patches SataDiskAuthenticateDevice (Disables hdd security sector verification)
 #============================================================================
-#KMAKEPATCH 0x800DD7C0
-#0:
-#   li %r3, 1
-#   blr
-#9:
+KMAKEPATCH 0x800DD7C0
+0:
+   li %r3, 1
+   blr
+9:
 
 #
 # TODO we've got some *stuff* that needs to be done if we want DashLaunch and all that jazz to work
