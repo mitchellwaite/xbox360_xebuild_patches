@@ -34,17 +34,27 @@ Unless otherwise noted, DevGL and Glitch2m patch sets use the same patch sets. C
 
 ### 1888
 
-Yes, 1888 FreeBoot patches are now a thing!  
-
 > [!IMPORTANT]
-> 1888 patches are in progress. There's a few things that don't work yet, namely:
-> * 3rd party hard drives (auth patch causes console to hang when a drive is plugged in, even an original one)
-> 
-> We've got a DashLaunch substitute based on Byrom90's DashLaunch for 6770: https://github.com/mitchellwaite/BladesDL/, so things like the memory protection toggle for OG xbox games, ping patch, liveblock, and automatically toggling the fallback xex key for having both dev and retail unsigned xex'es 
+> Yes, 1888 FreeBoot patches are now a thing! Experience what FreeBoot would have been like if it were available in 2005.
 >
-> And for what it's worth, it's a very early kernel so  some homebrew won't work. Anything that requires HvxExpansion or peek/poke backdoors that are NOT based on syscall 0 won't work. I'd need to reimplement those syscalls.
+> Note that the patch sets are in progress... still a few things that i'd like to tweak, but for now this is what is supported:
+>
+> - 360 games that require kernel 4552 or lower *seem* to work. The xex minimum version check is patched out, so any game that doesn't use new APIs should work fine.
+> - Original xbox backward compatibility works as it should, 1888 doesn't seem to have any issues with the newer xefu files or the hacked xefu file sets. There's really not a good xefu spoofer for 188 though
+> - Homebrew that doesn't use newer kernel APIs should be fine- Xexmenu, simple 360 NAND flasher, XeLLLaunch2, etc have zero issues. Some more advanced apps like RetroArch GBA, MilkyTracker, and even early versions of FSD work. 
+> - We don't have real dashlaunch, but we do have a substitute that blocks live, patches system link, and toggles the devkit/retail xex fallback key. It's based on Byrom90's bladesDL: https://github.com/mitchellwaite/BladesDL/
+> - usbdsec patch has been updated for 1888, see below
+>
+> ### What doesnt work?
+> - HDMI doesn't work, you'll need to use AV cables
+> - 256/512mb jasper/tonasket. no BB sfc driver
+> - Trinity/corona. no XCGPU driver
+> - DashLaunch substitute doesn't support plugins (yet...)
+> - Xbox 360 games that require kernel 5xxx or later don't seem to work, they'll crash or throw an unreadable disc error.
+> - Any homebrew that requires HV access through methods other than syscall 0. The syscall table in 1888 is a lot smaller and things like HvxSetState, HvxExpansionInstall, and HvxExpansionCall don't exist. Things that use syscall 0 (as you *should* be) work fine
+> - Obviously, any homebrew that uses unavailable kernel APIs won't work
 
-- Consoles: All phats
+- Consoles: All 16mb and 64mb phats
 - Hack Type: DevGL and Glitch2m
 - 2BL: 6752 (Jasper), 5772 (Falcon, Zephyr, Xenon), 7378 (Elpis)
 - 4BL: 9452 (modified to ignore patch slots)
