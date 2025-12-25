@@ -67,6 +67,7 @@ mkdir output\17489_RGLoader
 REM *** For RGLoader, the patch sets for 16mb machines are all identical as they use the same loaders and kernel
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_RGLoader\khv_vfuses_sb.bin output\17489_RGLoader\patches_g2mjasper.bin
 copy output\17489_RGLoader\patches_g2mjasper.bin output\17489_RGLoader\patches_g2mxenon.bin
+copy output\17489_RGLoader\patches_g2mjasper.bin output\17489_RGLoader\patches_g2mxenon_ELPIS.bin
 copy output\17489_RGLoader\patches_g2mjasper.bin output\17489_RGLoader\patches_g2mzephyr.bin
 copy output\17489_RGLoader\patches_g2mjasper.bin output\17489_RGLoader\patches_g2mfalcon.bin
 copy output\17489_RGLoader\patches_g2mjasper.bin output\17489_RGLoader\patches_g2mtrinity.bin
@@ -83,6 +84,9 @@ REM *** The "devkit" SD patch looks for XeLL at 0xF4000 because XeBuild can't be
 REM *** of the filesystem in a small block image is. SB patches are ignored pretty much.. just here to make sure
 REM *** the sections in the patch file are correct and xeBuild doesn't freak out (plz open source xebuild)
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_devkit.bin + src\KHV\17489_RGLoader\khv_vfuses_devkit.bin output\17489_RGLoader\patches_devjasper.bin
+copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devxenon.bin
+copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devzephyr.bin
+copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devfalcon.bin
 
 echo Done!
 
@@ -93,6 +97,7 @@ mkdir output\17489_XDKBuild
 REM *** For XDKBuild, the patch sets for 16mb machines are all identical as they use the same loaders and kernel
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_XDKBuild\khv_vfuses_sb.bin output\17489_XDKBuild\patches_g2mjasper.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mxenon.bin
+copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mxenon_ELPIS.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mzephyr.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mfalcon.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mtrinity.bin
@@ -109,6 +114,9 @@ REM *** The "devkit" SD patch looks for XeLL at 0xF4000 because XeBuild can't be
 REM *** of the filesystem in a small block image is. SB patches are ignored pretty much.. just here to make sure
 REM *** the sections in the patch file are correct and xeBuild doesn't freak out (plz open source xebuild)
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_devkit.bin + src\KHV\17489_XDKBuild\khv_vfuses_devkit.bin output\17489_XDKBuild\patches_devjasper.bin
+copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devxenon.bin
+copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devzephyr.bin
+copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devfalcon.bin
 
 echo Done!
 

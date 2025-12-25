@@ -85,6 +85,33 @@ MAKEPATCH 0x0000723C
    li %r3, 1
 9: 
 
+#============================================================================
+# Patch XeCryptBnQwBeSigVerify to return "true" instead of "false" when a
+# signature check fails
+#============================================================================
+MAKEPATCH 0x000206DC
+0:
+  li %r3, 1
+9:
+
+#============================================================================
+# Patch out signature checks in HvxExpansionInstall
+#============================================================================
+MAKEPATCH 0x00030C24
+0:
+  li %r3, 0
+9:
+
+MAKEPATCH 0x00030BEC
+0:
+  nop
+9:
+
+MAKEPATCH 0x00030C2C
+0:
+  nop
+9:
+
 # VFuse patches for 17489/21256.18
 
 
