@@ -40,6 +40,7 @@ call:buildPatchSection src\4BL\17489 sd_vfuses_devkit
 call:buildPatchSection src\4BL\17489 sd_shadowboot
 
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
+call:buildPatchSection src\4BL\9452 cd_9452_glitch2_rgl
 
 echo Done!
 

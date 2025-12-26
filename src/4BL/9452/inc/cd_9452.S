@@ -2,13 +2,19 @@
 
 .include "macros.S"
 
-# Branch destination 0x4F20 (aka CDXell)
+#============================================================================
+# Branch to CDXell... this replaces the first instruction at the entrypoint
+# of the CD with a function call
+#============================================================================   
 MAKEPATCH 0x0000028C
 0:
 	bl 0x4C94
 9:
 
-# Before booting the kernel, jump to the patch engine at 0x51EC
+#============================================================================
+# Rather than calling the rfid instruction to launch the kernel, branch to
+# the patch engine to apply 
+#============================================================================
 MAKEPATCH 0x000005B4
 0:
 	b 0x4C38
@@ -20,69 +26,101 @@ MAKEPATCH 0x00000830
 	nop
 9:
 
+#============================================================================
+# PCI init, SMC handshake, patching engine, Boot XeLL
+# This section of the patch is based on CDXell
+#============================================================================   
 MAKEPATCH 0x00004F20
 0:
+   # This section of the patch appears to skip UART 
+   # init if NAND at 0x4D is set to 0
 	li %r5, 0x200
 	oris %r5, %r5, 0x8000
 	sldi %r5, %r5, 0x20
-	oris %r5, %r5, 0xc800
+	oris %r5, %r5, 0xc800 # r5 pointing to memory mapped NAND: 0x80000200 0xC8000000
 	lbz %r4, 0x4d(%r5)
 	isync
 	cmplwi %r4, 0
 	beq smc_init
 
-	lis %r3, -0x51ff
+	lis %r3, -0x51ff # 0xAE010000 -> set UART to 38400, 8, N, 1 (CYGNOS compatible??? this is what XeLL sets the reg to in cygnos mode)
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
-	oris %r4, %r4, 0xea00
+	oris %r4, %r4, 0xea00 # 0x80000200 0xEA00101C is the UART config register
 	stw %r3, 0x101c(%r4)
 
 # SMC handshake
 smc_init:
 	mflr %r12
-	bl sub_51c0
+	bl print_dot_uart
 	mtlr %r12
 	li %r8, 0x200
 	oris %r8, %r8, 0x8000
 	sldi %r8, %r8, 0x20
-	oris %r8, %r8, 0xea00
+	oris %r8, %r8, 0xea00 # R8 -> SMC FIFO base address
 	lis %r9, 0x400
-	lis %r10, 0x100
+	lis %r10, 0x100 # SMC command 0x1 is GetPowerUpCause
 	li %r11, 0
-	stw %r9, 0x1084(%r8)
-	stw %r10, 0x1080(%r8)
+	stw %r9, 0x1084(%r8)    # start message
+	stw %r10, 0x1080(%r8)   # command 0x1 (GetPowerUpCause)
+	stw %r11, 0x1080(%r8)   # rest of the SMC message is blank 0x0
 	stw %r11, 0x1080(%r8)
 	stw %r11, 0x1080(%r8)
-	stw %r11, 0x1080(%r8)
-	stw %r11, 0x1084(%r8)
+	stw %r11, 0x1084(%r8)   # end message
 
 smc_handshake_loop:
-	lwz %r12, 0x1094(%r8)
+	lwz %r12, 0x1094(%r8)   # Wait for a message
 	and. %r12, %r12, %r9
 	beq smc_handshake_loop
-	stw %r9, 0x1094(%r8)
-	lwz %r12, 0x1090(%r8)
+	stw %r9, 0x1094(%r8)    # Start to read reply
+	lwz %r12, 0x1090(%r8)   # First byte of the response is all we care about
+	lwz %r3, 0x1090(%r8)    # the rest of the reply are zeros... put them in r3
 	lwz %r3, 0x1090(%r8)
-	lwz %r3, 0x1090(%r8)
-	lwz %r3, 0x1090(%r8)
-	stw %r11, 0x1094(%r8)
-	srwi %r3, %r12, 0x18
+	lwz %r3, 0x1090(%r8)    
+	stw %r11, 0x1094(%r8)   # end read reply
+	srwi %r3, %r12, 0x18    # shift right so we get the first byte of the reply in R3 (which should be 0x1)
 	cmpwi %r3, 1
-	bne smc_handshake_loop
+	bne smc_handshake_loop  # If we got a bad reply... try again
+
+# This is a list of valid powerup causes:
+#
+# class PowerUpCause(Enum):
+#     POWER           = 0x11
+#     EJECT           = 0x12
+#     UNDOCUMENTED_15 = 0x15
+#     UNDOCUMENTED_16 = 0x16
+#     REMOPOWER       = 0x20
+#     UNDOCUMENTED_21 = 0x21
+#     REMOX           = 0x22
+#     WINBUTTON       = 0x24
+#     UNDOCUMENTED_30 = 0x30
+#     UNDOCUMENTED_31 = 0x31
+#     KIOSK           = 0x41
+#     WIRELESSX       = 0x55
+#     WIREDXF1        = 0x56
+#     WIREDXF2        = 0x57
+#     WIREDXB2        = 0x58
+#     WIREDXB1        = 0x59
+#     WIREDXB3        = 0x5A
 
 # Get the powerup cause from the SMC
+# XeLL powerup causes are set at bytes 0x4E and 0x4F in NAND by XeBuild 
 	rlwinm %r3, %r12, 0x10, 0x18, 0x1f
 	cmpwi %r3, 0
 	beq start_kernel
-	lbz %r4, 0x4f(%r5)
+	lbz %r4, 0x4f(%r5) # Powerup cause A
 	cmplw %r3, %r4
 	beq load_xell
-	lbz %r4, 0x4e(%r5)
+	lbz %r4, 0x4e(%r5) # Powerup cuase B
 	cmplw %r3, %r4
 	beq load_xell
 
 # Boot the kernel... no need to go further
+# The bl to the beginning of this function
+# replaces a lis instruction, so we'll do
+# what was replaced and then branch back
+# to where we left off
 start_kernel:
 	lis %r3, 0x300
 	blr
@@ -92,7 +130,7 @@ load_xell:
 	oris %r7, %r7, 0x8000
 	sldi %r7, %r7, 0x20
 	oris %r7, %r7, 6
-	ori %r7, %r7, 0x1010
+	ori %r7, %r7, 0x1010 # r7 contains the base address for the POST bus  0x80000200_00061010
 
 # set post code 0x10   
 	li %r3, 0x10
@@ -118,10 +156,25 @@ load_xell:
 # value into the register to point to the memory mapped location where XeLL lives
 # Assembly is fun!
 
+# Regular FreeBoot image
+   .ifdef xell_C807
+   .set xell_offset, 0xC807
+   .endif
+
+# 16mb RGLoader with XeLL in flashfs: 0x100000
+   .ifdef xell_C810
+   .set xell_offset, 0xC810
+   .endif
+
+# Jasper/Trinity BB: 0xB80000
+   .ifdef xell_C8B8
+   .set xell_offset, 0xC8B8
+   .endif
+
 	li %r5, 0x200
 	oris %r5, %r5, 0x8000
 	sldi %r5, %r5, 0x20
-	oris %r5, %r5, 0xc807 # XeLL location for a 16mb retail image is 0x70000 in flash
+   oris %r5, %r5, xell_offset
 	ori %r5, %r5, 0
 	lis %r6, -0x8000
 	sldi %r6, %r6, 0x20
@@ -166,15 +219,15 @@ pci_init:
 	ori %r3, %r3, 0x17c
 	sldi %r3, %r3, 0x20
 	oris %r3, %r3, 0x400
-	ori %r3, %r3, 0x50ec
+	ori %r3, %r3, 0x50ec # Address of PCI_INIT_LIST. If code is added before the struct, this must be changed
 	li %r30, 0x200
 	oris %r30, %r30, 0x8000
 	sldi %r30, %r30, 0x20
 
-loc_50BC:
+pci_init_loop:
 	lwzu %r4, 4(%r3)
 	cmplwi %r4, 0
-	beqlr
+	beqlr # Return from the function when we hit the 0x00000000
 	lwzu %r31, 4(%r3)
 	stwbrx %r31, %r30, %r4
 	li %r31, 0xff
@@ -184,9 +237,10 @@ loc_50BC:
 	lwzu %r29, 4(%r3)
 	or %r31, %r31, %r29
 	stwbrx %r31, %r30, %r4
-	b loc_50BC
+	b pci_init_loop
 
 # this is a bunch of LONGs for hardware init
+PCI_INIT_LIST:
    # pci-pci bridge
 	.long 0xD0000010
 	.long 0xEA000000
@@ -275,19 +329,19 @@ loc_50BC:
    # End of list!
    .long 0x00000000
 
-sub_51c0:
-	li %r3, 0x2e
+print_dot_uart:
+	li %r3, 0x2e            # ASCII 0x2E (.)
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
-	oris %r4, %r4, 0xea00
+	oris %r4, %r4, 0xea00   # SMC base address 0xEA000000
 	slwi %r3, %r3, 0x18
-	stw %r3, 0x1014(%r4)
+	stw %r3, 0x1014(%r4)    # 0xEA001014 == UART data register
 
-loc_51DC:
-	lwz %r3, 0x1018(%r4)
+wait_for_character_sent:
+	lwz %r3, 0x1018(%r4)    # wait until the character we sent is actually sent
 	rlwinm. %r3, %r3, 0, 6, 6
-	beq loc_51DC
+	beq wait_for_character_sent
 	blr
 # end of func
 
@@ -296,23 +350,23 @@ loc_51DC:
 	li %r8, 0x10
 	andc %r8, %r7, %r8
 	mtmsrd %r8
-	bl sub_51c0
+	bl print_dot_uart
 	li %r5, 0x200
 	oris %r5, %r5, 0x8000
 	sldi %r5, %r5, 0x20
 	oris %r5, %r5, 0xc800
 	ori %r5, %r5, 0
-	lwz %r6, 0x70(%r5)
-	lwz %r4, 0x64(%r5)
-	cmplwi %r6, 0
-	bne loc_5228
-	lis %r6, 1
+	lwz %r6, 0x70(%r5) # Load the patch slot size from 0x70 in NAND
+	lwz %r4, 0x64(%r5) # load the first patch slot address from 0x64 in NAND
+	cmplwi %r6, 0      # Test if the patch slot size is 0 (xeBuild bug? even if not, the images don't boot when this is 0)
+	bne patch_slot_size_nonzero
+	lis %r6, 1         # Default patch slot size (doesn't work for me but whatever this is how the existing patches work)
 
-loc_5228:
+patch_slot_size_nonzero:
 	add %r4, %r4, %r6
 
-# The location of patches on a jasper BB is
-# different for a glitch2 image and a DevGL image
+# If this is built for a vfuse patch set, we need to skip past the vfuses
+# at the beginning of the patch slot
 .ifdef vfuses
 	addi %r4, %r4, 0x5c
 .else
