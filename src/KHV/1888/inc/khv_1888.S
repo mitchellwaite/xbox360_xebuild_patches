@@ -581,29 +581,26 @@ KMAKEPATCH XeKeysFreeSpace
 #============================================================================
 # Patch VdpOneTimeDeviceInitialize to spoof the GPU ID to avoid E78
 #============================================================================
-KMAKEPATCH 0x800DE5FC
-0:
-    li %r11, 0x11 #Prod GPU
-9:
+#KMAKEPATCH 0x800DE5FC
+#0:
+#    li %r11, 0x11 #Prod GPU
+#9:
 
 # Another option to skip the GPU version check is to patch the bge before the call to VdDisplayFatalError
-# KMAKEPATCH 0x800DE6A8
-# 0:
-#     b +0x10
-# 9:
+KMAKEPATCH 0x800DE6A8
+0:
+    b +0x10
+9:
 
 #============================================================================
 # Patch VdInitializeEdram to set edram timing, otherwise graphics will look screwy
+# We'll put this function in the space where SataDiskAuthenticateDevice used to be
 #============================================================================
+.set SetEdramTiming, 0x800DD7C8
+
 KMAKEPATCH 0x80098688
 0:
-.ifdef patch_gpu_zeus
-   li %r10, 0x15 # Zeus/Kronos timing
-.endif
-
-.ifdef patch_gpu_rhea
-   li %r10, 0x1E # Rhea timing
-.endif
+   KMAKEBRANCHL SetEdramTiming
 9:
 
 KMAKEPATCH 0x800986D0
@@ -615,6 +612,31 @@ KMAKEPATCH 0x80098718
 0:
    li %r4, 0x31
 9:
+
+KMAKEPATCH SetEdramTiming
+0:
+   li  %r10, 0x1A  # Default is Y1 timing
+
+   lis %r31, 0xD001 # ASIC id stored at 0x800F41AC
+   lwz %r3, 0(%r31) # Load the ASIC id
+
+   li %r0, 0xD
+   sc
+
+   cmplwi cr6, %r3, 0x3
+   blt cr6, NotAKronosOrZeus
+   li %r10, 0x15 # Kronos/Zeus timing
+   b ProbablyAY1
+
+NotAKronosOrZeus:
+   cmplwi cr6, %r3, 0x2
+   blt cr6, ProbablyAY1
+   li %r10, 0x1E # Rhea timing
+
+ProbablyAY1:
+   blr
+9:
+
 
 .endif
 
