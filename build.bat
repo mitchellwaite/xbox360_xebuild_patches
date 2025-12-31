@@ -29,6 +29,10 @@ call:buildPatchSection src\KHV\1888 khv_1888_vfuses
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses_zeus
 
+call:buildPatchSection src\KHV\1838 khv_1838_vfuses
+call:buildPatchSection src\KHV\1838 khv_1838_vfuses_rhea
+call:buildPatchSection src\KHV\1838 khv_1838_vfuses_zeus
+
 echo Done!
 
 echo.
@@ -152,6 +156,12 @@ copy output\1888\patches_g2mxenon.bin output\1888\patches_g2mzephyr_y1.bin
 
 REM *** Elpis is basically just a fancy Rhea GPU, so the kernel patch can be the same. Use 7378 loader to avoid Samsung + Rhea hwinit issues
 copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mxenon_ELPIS.bin
+
+echo 1838 XDKBuild...
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_zeus.bin output\1838\patches_g2mjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_rhea.bin output\1838\patches_g2mfalcon.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_g2mxenon.bin
 
 echo Done!
 
