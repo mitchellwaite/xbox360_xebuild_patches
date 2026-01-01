@@ -421,8 +421,8 @@ loc_51B0:
 # devkit image because reasons. Need to handle that separately.
 .ifdef devgl64
 set_bits_for_xell_in_flashfs:
-   oris    %r5, %r5, 0xC80F
-   ori     %r5, %r5, 0x4000
+   oris    %r5, %r5, 0xC809
+   ori     %r5, %r5, 0xC000
    blr
 .endif
 
