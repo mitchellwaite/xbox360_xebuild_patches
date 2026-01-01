@@ -10,7 +10,7 @@ _start:
 # Branch to CDXell... this replaces the first instruction at the entrypoint
 # of the SD with a function call
 #============================================================================   
-MAKEPATCH 0X310 
+MAKEPATCH 0x310 
 0:
    bl 0x4c20 
 9:
@@ -19,25 +19,24 @@ MAKEPATCH 0X310
 # Rather than calling the rfid instruction to launch the kernel, branch to
 # the patch engine to apply 
 #============================================================================
-MAKEPATCH 0X6b4  
+MAKEPATCH 0x6B4  
 0:
    b       0x4b48
 9:
 
 #============================================================================
 # Replace the function call to 0xA58, effectively making it always return 0
-# TODO: figure out what this function does... shadowboot doesn't patch this
+# Blocks the fuse decode logic in the SD (POST 0x4D, panic 0xB6)
 #============================================================================
-MAKEPATCH 0Xd28
+MAKEPATCH 0xD28
 0:
    li      %r3, 0
 9:
 
 #============================================================================
-# NOP out a panic/jump to invalid instruction
-# TODO: figure out what we're patching since the shadowboot doesn't need it
+# Disable panic 0xB5 (VERIFY_OFFSET_6BL)
 #============================================================================
-MAKEPATCH 0Xd7c 
+MAKEPATCH 0xD7C 
 0:
    nop
 9:
@@ -47,7 +46,7 @@ MAKEPATCH 0Xd7c
 #============================================================================
 # Patch out SE hash check panic (Allows arbitrary SE/CE to run)
 #============================================================================
-MAKEPATCH 0Xce0
+MAKEPATCH 0xCE0
 0:
    b       0x8
 9:
@@ -56,7 +55,7 @@ MAKEPATCH 0Xce0
 #============================================================================
 # read vfuses
 #============================================================================
-MAKEPATCH 0XA80
+MAKEPATCH 0xA80
 0:
    lis     %r3, 0x1800
    ori     %r3, %r3, 0
@@ -76,7 +75,7 @@ MAKEPATCH 0XA80
 # PCI init, SMC handshake, patching engine, Boot XeLL
 # This section of the patch is based on CDXell
 #============================================================================   
-MAKEPATCH 0X4f30
+MAKEPATCH 0x4F30
 0:
    # This section of the patch appears to skip UART 
    # init if NAND at 0x4D is set to 0   
