@@ -6,11 +6,12 @@
 .set Syscall_Table, 0x1440
 
 # Real HV Functions
-.set HV_HvxGetVersions, 0x2A20
-.set HV_memcpy, 0xDBE0
-.set HV_XeCryptAesKey, 0xA370
-.set HV_HvpGetFlashBaseAddress, 0x28F0
-.set HV_HvpFlashCopy, 0x2970
+.set HV_HvxGetVersions, 0x29A0
+.set HV_memcpy, 0xEFF0
+.set HV_XeCryptAesKey, 0xB938
+.set HV_HvpGetFlashBaseAddress, 0x2870
+.set HV_HvpFlashCopy, 0x28F0
+.set HV_HvxPostOutput, 0x26C4
 
 # Functions within the patches, some of these change depending on what
 # features are enabled.
@@ -24,39 +25,37 @@
 #============================================================================
 #  HDD filesystem redirection
 #============================================================================
-# .ifdef hdd
-# .include "sysroot_hdd.S"
-# .endif
+.include "sysroot_hdd.S"
 
 #============================================================================
 # Enable Shadowboot patch out the signature check
 #============================================================================
-MAKEPATCH 0x27BC
+MAKEPATCH 0x273C
 0:
    nop
 9: 
 
-MAKEPATCH 0x27C0
+MAKEPATCH 0x2740
 0:
    nop
 9: 
 
-MAKEPATCH 0x27D4
+MAKEPATCH 0x2754
 0:
    nop
 9: 
 
-MAKEPATCH 0x27E4
+MAKEPATCH 0x2764
 0:
    nop
 9: 
 
-MAKEPATCH 0x2824
+MAKEPATCH 0x27A4
 0:
    nop
 9: 
 
-MAKEPATCH 0x2DF8
+MAKEPATCH 0x2C50
 0:
    li %r3, 1
 9: 
@@ -65,7 +64,7 @@ MAKEPATCH 0x2DF8
 # Patch XeCryptBnQwBeSigVerify to return "true" instead of "false" when a
 # signature check fails
 #============================================================================
-MAKEPATCH 0xA364
+MAKEPATCH 0xB76C
 0:
   li %r3, 1
 9:
@@ -75,12 +74,12 @@ MAKEPATCH 0xA364
 #   Setup Fuse Row Pointer to point at Virtual Fuses
 #   Change Increment and Range Check of Fuse Row Pointer
 #============================================================================
-MAKEPATCH 0x2A5C
+MAKEPATCH 0x29DC
 0:
     bla     FixFusesAddr
 9:
 
-MAKEPATCH 0x2A70
+MAKEPATCH 0x29F0
 0:
     addi    %r11, %r11, 0x0001
     cmplwi  %cr6, %r11, 0x000c
@@ -112,11 +111,16 @@ MAKEPATCH HV_FlagFixer
    lwz %r4, 0x64(%r3)
    lwz %r5, 0x70(%r3)
 
+   # XeBuild puts the virtual fuses at the beginning of
+   # the second patch slot, comment this out if you use the 1st
+   add %r3, %r3, %r4
+   add %r4, %r3, %r5
+
    lis %r3, 1
    # 0x60 bytes, 0xC 64bit vals to copy
    subi %r3, %r3, 0x60
    li %r5, 0xc
-   bla HV_HvpFlashCopy
+   MAKEBRANCHL HV_HvpFlashCopy
 
    li %r3, '!'
    bl PrintChar
@@ -165,12 +169,12 @@ MAKEPATCH FixFusesAddr
 #============================================================================
 
 # NOP out a check on the ASIC ID
-KMAKEPATCH 0x800FE23C
+KMAKEPATCH 0x800FDF14
 0:
    nop
 9:
 
-KMAKEPATCH 0x800FE268
+KMAKEPATCH 0x800FDF40
 0:
     li %r11, 0x11 #Prod GPU
 9:
@@ -178,7 +182,7 @@ KMAKEPATCH 0x800FE268
 #============================================================================
 # Patch VdInitializeEdram to set edram timing, otherwise graphics will look screwy
 #============================================================================
-KMAKEPATCH 0x800AECA4
+KMAKEPATCH 0x800AE9A4
 0:
 .ifdef patch_gpu_zeus
    li %r10, 0x15 # Zeus/Kronos timing
@@ -189,12 +193,12 @@ KMAKEPATCH 0x800AECA4
 .endif
 9:
 
-KMAKEPATCH 0x800AECEC
+KMAKEPATCH 0x800AE9EC
 0:
    li %r4, 0x31
 9:
 
-KMAKEPATCH 0x800AED3C
+KMAKEPATCH 0x800AEA3C
 0:
    li %r4, 0x31
 9:

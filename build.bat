@@ -43,6 +43,11 @@ call:buildPatchSection src\4BL\17489 sd_vfuses_sb
 call:buildPatchSection src\4BL\17489 sd_vfuses_devkit
 call:buildPatchSection src\4BL\17489 sd_shadowboot
 
+call:buildPatchSection src\4BL\12611 sd_vfuses_bb
+call:buildPatchSection src\4BL\12611 sd_vfuses_sb
+call:buildPatchSection src\4BL\12611 sd_vfuses_devkit
+call:buildPatchSection src\4BL\12611 sd_shadowboot
+
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
 call:buildPatchSection src\4BL\9452 cd_9452_glitch2_rgl
 
@@ -100,7 +105,7 @@ echo 17489 XDKBuild...
 mkdir output\17489_XDKBuild
 
 REM *** For XDKBuild, the patch sets for 16mb machines are all identical as they use the same loaders and kernel
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_XDKBuild\khv_vfuses_sb.bin output\17489_XDKBuild\patches_g2mjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\17489_XDKBuild\khv_vfuses_sb.bin output\17489_XDKBuild\patches_g2mjasper.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mxenon.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mxenon_ELPIS.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mzephyr.bin
@@ -159,9 +164,11 @@ copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src
 
 echo 1838 XDKBuild...
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_zeus.bin output\1838\patches_g2mjasper.bin
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_rhea.bin output\1838\patches_g2mfalcon.bin
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_g2mxenon.bin
+mkdir output\1838
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_zeus.bin output\1838\patches_g2mjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_rhea.bin output\1838\patches_g2mfalcon.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_g2mxenon.bin
 
 echo Done!
 
