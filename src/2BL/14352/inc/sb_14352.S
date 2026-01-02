@@ -4,6 +4,15 @@
 
 .ifdef vfuses
 #============================================================================
+# Change the magic bytes (original = 0x5342/SB, new = 0x4342/CB) so that the
+# mfg CB_A 9188 will load SB 14352 as if it were a retail CB_B. Note: this
+# doesn't matter for RGH3, CB_A 10918 doesn't have the same problem
+#============================================================================
+.long 0x00000000
+.long 0x00000001
+.long 0x43423810
+
+#============================================================================
 # extend the ldr size
 #============================================================================
    	MAKEPATCH 0xc
