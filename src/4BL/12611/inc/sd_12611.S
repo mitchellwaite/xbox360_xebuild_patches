@@ -201,21 +201,6 @@ load_xell:
 # value into the register to point to the memory mapped location where XeLL lives
 # Assembly is fun!
 
-# Used if we're using SD 17489 to boot CE 1888
-   .ifdef xell_C80A
-   .set xell_offset, 0xC80A
-   .endif
-
-# 16mb/64mb SB/Corona BB: 0xF0000
-   .ifdef xell_C80F
-   .set xell_offset, 0xC80F
-   .endif
-
-# Jasper/Trinity BB: 0xB80000
-   .ifdef xell_C8B8
-   .set xell_offset, 0xC8B8
-   .endif
-
    li      %r5, 0x200
    oris    %r5, %r5, 0x8000
    sldi    %r5, %r5, 32
@@ -421,8 +406,8 @@ loc_51B0:
 # devkit image because reasons. Need to handle that separately.
 .ifdef devgl64
 set_bits_for_xell_in_flashfs:
-   oris    %r5, %r5, 0xC809
-   ori     %r5, %r5, 0xC000
+   oris    %r5, %r5, xell_offset_high
+   ori     %r5, %r5, xell_offset_low
    blr
 .endif
 

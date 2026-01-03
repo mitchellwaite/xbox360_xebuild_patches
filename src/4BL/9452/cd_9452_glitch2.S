@@ -1,5 +1,5 @@
 # Builds 9452 SD patch set
 
-.set xell_C807, 1
+.set xell_offset, 0xC807
 
 .include "cd_9452.S"

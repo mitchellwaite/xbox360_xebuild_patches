@@ -30,8 +30,7 @@ call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses_zeus
 
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses
-call:buildPatchSection src\KHV\1838 khv_1838_vfuses_rhea
-call:buildPatchSection src\KHV\1838 khv_1838_vfuses_zeus
+call:buildPatchSection src\KHV\1838 khv_1838_vfuses_devkit
 
 echo Done!
 
@@ -43,9 +42,8 @@ call:buildPatchSection src\4BL\17489 sd_vfuses_sb
 call:buildPatchSection src\4BL\17489 sd_vfuses_devkit
 call:buildPatchSection src\4BL\17489 sd_shadowboot
 
-call:buildPatchSection src\4BL\12611 sd_vfuses_bb
-call:buildPatchSection src\4BL\12611 sd_vfuses_sb
-call:buildPatchSection src\4BL\12611 sd_vfuses_devkit
+call:buildPatchSection src\4BL\12611 sd_vfuses_sb_1838
+call:buildPatchSection src\4BL\12611 sd_vfuses_devkit_1838
 call:buildPatchSection src\4BL\12611 sd_shadowboot
 
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
@@ -162,15 +160,25 @@ copy output\1888\patches_g2mxenon.bin output\1888\patches_g2mzephyr_y1.bin
 REM *** Elpis is basically just a fancy Rhea GPU, so the kernel patch can be the same. Use 7378 loader to avoid Samsung + Rhea hwinit issues
 copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mxenon_ELPIS.bin
 
+
 echo 1838 XDKBuild...
 
 mkdir output\1838
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_zeus.bin output\1838\patches_g2mjasper.bin
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_rhea.bin output\1838\patches_g2mfalcon.bin
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_g2mxenon.bin
+REM *** 1838 is a bit weird with the patches- ordinarily, you'd thing we'd patch the GPU driver like we do for 1888
+REM *** However, the GPU is LESS stable with the ASIC ID and EDRAM patches. So, we'll leave it alone and let 1838
+REM *** run in a "low performance" backup mode that's better, but still a bit glitchy. You'll need a Y1 for 1838
+REM *** to be useable for anything other than simple demos or looking at the dashboard
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_devkit.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_devzephyr.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb_1838.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_g2mxenon.bin
+copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mzephyr.bin
+copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mfalcon.bin
+copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mjasper.bin
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_devkit_1838.bin + src\KHV\1838\khv_1838_vfuses_devkit.bin output\1838\patches_devxenon.bin
+copy output\1838\patches_devxenon.bin output\1838\patches_devzephyr.bin
+copy output\1838\patches_devxenon.bin output\1838\patches_devfalcon.bin
+copy output\1838\patches_devxenon.bin output\1838\patches_devjasper.bin
 
 echo Done!
 

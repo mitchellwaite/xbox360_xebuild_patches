@@ -156,21 +156,6 @@ load_xell:
 # value into the register to point to the memory mapped location where XeLL lives
 # Assembly is fun!
 
-# Regular FreeBoot image
-   .ifdef xell_C807
-   .set xell_offset, 0xC807
-   .endif
-
-# 16mb RGLoader with XeLL in flashfs: 0x100000
-   .ifdef xell_C810
-   .set xell_offset, 0xC810
-   .endif
-
-# Jasper/Trinity BB: 0xB80000
-   .ifdef xell_C8B8
-   .set xell_offset, 0xC8B8
-   .endif
-
 	li %r5, 0x200
 	oris %r5, %r5, 0x8000
 	sldi %r5, %r5, 0x20

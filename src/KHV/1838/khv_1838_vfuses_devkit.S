@@ -1,4 +1,4 @@
-# Builds 1838 kernel patch set with vfuse support and HDD redirection
+# Builds 1838 kernel patch set with vfuse support
 
 #
 # Note: the same tricks we use on 1888 to add support for Rhea/Zeus do NOT
@@ -10,6 +10,5 @@
 #
 
 .set vfuses, 1
-.set hdd, 1
 
 .include "khv_1838.S"
