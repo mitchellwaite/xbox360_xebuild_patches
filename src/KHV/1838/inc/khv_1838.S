@@ -107,6 +107,62 @@ MAKEPATCH 0x29F0
     cmplwi  %cr6, %r11, 0x000c
 9:
 
+MAKEPATCH 0x00005B00
+0:
+   bla FixFusesAddr
+9:
+
+MAKEPATCH 0x00005B30
+0:
+   addi %r11, %r11, 1
+   cmplwi cr6, %r11, 0xc
+9:
+
+MAKEPATCH 0x00005C70
+0:
+   bla FixFusesAddr
+9:
+
+MAKEPATCH 0x00005CA0
+0:
+   addi %r11, %r11, 1
+   cmplwi cr6, %r11, 0xc
+9:
+
+MAKEPATCH 0x00005D14
+0:
+   bla FixFusesAddr
+9:
+
+MAKEPATCH 0x00005D44
+0:
+   addi %r11, %r11, 1
+   cmplwi cr6, %r11, 0xc
+9:
+
+MAKEPATCH 0x00006008
+0:
+   bla FixFusesAddr
+9:
+
+MAKEPATCH 0x00006038
+0:
+   addi %r11, %r11, 1
+   cmplwi cr6, %r11, 0xc
+9:
+
+MAKEPATCH 0x0000614C
+0:
+   bla FixFusesAddr
+9:
+
+MAKEPATCH 0x00006178
+0:
+   addi %r11, %r11, 1
+   sldi %r9, %r9, 3
+   cmplwi cr6, %r11, 0xc
+9:
+
 # ============================================================================
 #	Branch to HV flag fixer function
 # ============================================================================
