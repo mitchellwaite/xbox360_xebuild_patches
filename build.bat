@@ -63,6 +63,8 @@ call:buildPatchSection src\2BL\6752 cbb_6752_vfuses
 
 call:buildPatchSection src\2BL\7378 cbb_7378_vfuses
 
+call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
+
 echo Done!
 
 echo.
@@ -140,6 +142,9 @@ copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src
 REM *** Xenon and Zephyr use the 5772 CB_B, same as falcon, so the patch sets are the same
 copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mxenon.bin
 copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mzephyr.bin
+
+REM *** Never thought i'd need to do a corona patch set but here we are
+copy /b src\2BL\13121\cbb_13121_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mcorona.bin
 
 echo Done!
 

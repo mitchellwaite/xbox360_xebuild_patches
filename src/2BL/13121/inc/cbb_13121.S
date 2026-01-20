@@ -32,8 +32,6 @@ MAKEPATCH 0x000059B8
 # Thus, the glitch2m patch set produced here *will* be different (and actually work)
 .ifdef vfuses
 
-# TODO: phat vfuse patch sets do this, but corona patch set doesn't. Corona patches are crap
-# but i do need to unbrick my corona and test this anyway
 MAKEPATCH 0x00000420
 0:
 	li %r4, 0x601
@@ -41,28 +39,32 @@ MAKEPATCH 0x00000420
 
 MAKEPATCH 0x00004F84
 0:
-	ld r3, 0x258(r29)
-	lwz r4, 0x64(r3)
-	lwz r5, 0x70(r3)
-	add r3, r3, r4
-	add r4, r3, r5
-	mr r3, r10
-	li r5, 0xc
+	ld %r3, 0x258(%r29)
+	lwz %r4, 0x64(%r3)
+	lwz %r5, 0x70(%r3)
+	add %r3, %r3, %r4
+	add %r4, %r3, %r5
+	mr %r3, %r10
+	li %r5, 0xc
 	MAKEBRANCHL 0x5A90
 9:
 
 MAKEPATCH 0x00005388
 0:
-	ld r3, 0x258(r26)
-	lwz r4, 0x64(r3)
-	lwz r5, 0x70(r3)
-	add r3, r3, r4
-	add r4, r3, r5
-	mr r3, r10
-	li r5, 0xc
+	ld %r3, 0x258(%r26)
+	lwz %r4, 0x64(%r3)
+	lwz %r5, 0x70(%r3)
+	add %r3, %r3, %r4
+	add %r4, %r3, %r5
+	mr %r3, %r10
+	li %r5, 0xc
 	MAKEBRANCHL 0x5A90
 9:
 .endif
 
 # done with patch section
 
+#============================================================================
+	.long 0xFFFFFFFF
+	.end
+#============================================================================
