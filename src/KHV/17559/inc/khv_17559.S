@@ -810,7 +810,7 @@ KMAKEPATCH 0x800E17CC
 9:
 
 #=============================================================================
-# Patches SataDiskAuthenticateDevice (Disables hdd security sector verification???)
+# Patches SataDiskAuthenticateDevice (Disables hdd security sector verification)
 #============================================================================
 # 00 15 D9 D8 00 00 00 02 38 60 00 01 4E 80 00 20
 KMAKEPATCH 0x8015D9D8

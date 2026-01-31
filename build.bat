@@ -24,6 +24,7 @@ call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_coronabb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_devkit
 
 call:buildPatchSection src\KHV\17559 khv_17559_vfuses
+call:buildPatchSection src\KHV\17559 hddssauth
 
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea
