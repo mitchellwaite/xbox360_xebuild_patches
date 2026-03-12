@@ -601,6 +601,14 @@ KMAKEPATCH 0x800F1300
 
 #=============================================================================
 # Patches SataDiskAuthenticateDevice
+#
+# Regular FreeBoot would have done the following at 0x80117E88
+#     li r3, 1
+#     blr
+#
+# However, that breaks compat with FATXPlorer formatted drives with a SS and
+# "extra space"... this patch does full auth for retail for such drives but
+# still allows generic drives by patching the error path to return TRUE
 #============================================================================
 
 #============================================================================
