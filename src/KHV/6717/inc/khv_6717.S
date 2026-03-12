@@ -4,6 +4,21 @@
 
 .include "macros.S"
 
+# Start of the syscall table. This is where the address of the real HvxGetVersions (syscall 0) is found
+.set Syscall_Table, 0x1CD4
+
+# Real HV Functions
+.set HvpGetFlashBase,0x998
+.set CopyBy64,0x78C
+.set resumeInit,0x19A4
+.set HvxGetVersions,0x2A48
+.set HV_memcpy,0xC740
+
+# Functions within the patches
+.set FixFusesAddr    0xD020
+.set HV_PP_Syscall0  0xD030
+.set HV_setmemprot   0x1570
+
 # ============================================================================
 #	Branch to HV flag fix function
 # ============================================================================
@@ -17,7 +32,7 @@ MAKEPATCH 0x000019A0
 # ============================================================================
 MAKEPATCH 0x00002A90
 0:
-   bla 0xCFD0
+   bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00002AA4
@@ -28,7 +43,7 @@ MAKEPATCH 0x00002AA4
 
 MAKEPATCH 0x00007198
 0:
-   bla 0xCFD0
+   bla FixFusesAddr
 9:
 
 MAKEPATCH 0x000071C8
@@ -40,7 +55,7 @@ MAKEPATCH 0x000071C8
 
 MAKEPATCH 0x00007308
 0:
-   bla 0xCFD0
+   bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00007338
@@ -51,7 +66,7 @@ MAKEPATCH 0x00007338
 
 MAKEPATCH 0x00007428
 0:
-   bla 0xCFD0
+   bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00007458
@@ -62,7 +77,7 @@ MAKEPATCH 0x00007458
 
 MAKEPATCH 0x00007698
 0:
-   bla 0xCFD0
+   bla FixFusesAddr
 9:
 
 MAKEPATCH 0x000076C8
@@ -74,7 +89,7 @@ MAKEPATCH 0x000076C8
 
 MAKEPATCH 0x000077EC
 0:
-   bla 0xCFD0
+   bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00007818
@@ -109,7 +124,7 @@ MAKEPATCH 0x00001420
 # ============================================================================
 MAKEPATCH 0x0000114C
 0:
-   ba 0x1570
+   ba HV_setmemprot
 9:
 
 # ============================================================================
@@ -117,7 +132,7 @@ MAKEPATCH 0x0000114C
 #	to toggle the memory protection state.
 #	ENABLED = 0x38800000 (li r4, 0) || DISABLED = 0x38800007 (li r4, 7)
 # ============================================================================
-MAKEPATCH 0x00001570 # empty spot
+MAKEPATCH HV_setmemprot
 0:
    li r4, 7				# DISABLED by default
    andc r1, r1, r4
@@ -161,27 +176,8 @@ MAKEPATCH 0x0000534C
    nop
 9:
 
-
-.set HvpGetFlashBase,0x998
-.set CopyBy64,0x78C
-.set resumeInit,0x19A4
-.set HvxGetVersions,0x2A48
-.set Hv_setmemprot,0x1570
-.set HV_memcpy,0xC740
-
-.set checkOpType,0xD018
-.set hvxExecuteCode,0xD064
-.set checkforMemProtectOn,0xd03c
-.set setMemProtections,0xd044
-.set returnOne,0xD05C
-.set doMemCpy,0xD0B0
-.set returnTwo,0xD0C8
-.set cpyLoop,0xD078
-
-
 # ============================================================================
 #	HV Flag Fixer branched from 0x19A0
-#	Followed by HV Syscall0 PeekPoke backdoor starting at 0xB594
 # ============================================================================
 MAKEPATCH 0x0000CF80
 0:
@@ -208,20 +204,15 @@ MAKEPATCH 0x0000CF80
 
    # Print the staus indicator
    li r3, '!'
-   bla 0xCFDC
+   bl PrintChar
    li r3, '\n'
-   bla 0xCFDC
+   bl PrintChar
    mtlr r8
 
    # Branch back to where we came from 
    ba resumeInit 	# 0x19A4
 
-   # Fuse Fixer
-   lis r3, 1
-   addi r3, r3, -0x60
-   blr
-
-   # PrintChar
+PrintChar:
    lis r4, -0x8000
    ori r4, r4, 0x200
    sldi r4, r4, 0x20
@@ -234,10 +225,23 @@ charwait:
    rlwinm. r3, r3, 0, 6, 6
    beq charwait
    blr
+9:
+
+# ============================================================================
+# FixFusesAddr: Fuse Fixing Function
+# ============================================================================
+MAKEPATCH FixFusesAddr
+0:
+   lis r3, 1
+   addi r3, r3, -0x60
+   blr
+9:
 
 # ---------------------------------------------------
 # HV_PP_Syscall0 (syscall 0 backdoor)
 # ---------------------------------------------------
+MAKEPATCH HV_PP_Syscall0
+0:
    lis r11, 0x7262         # Freeboot syscall key - 0x72627472 "rbtr" 1st half
    ori r11, r11, 0x7472    # 2nd half
    cmplw cr6, r3, r11      # Check for the magic key
@@ -253,11 +257,11 @@ checkOpType: # 0xD018
    cmplwi cr6, r4, 2             # Check for 2 aka set mem protections DISABLED
    bne cr6, checkforMemProtectOn # If not, branch to check for mem protections ENABLED - 0xd03c
    ori r6, r6, 7                 # Updates r6 to 0x38800007 - Indicating protections are to be DISABLED
-   MAKEBRANCH setMemProtections  # Branch to set memory protections setup 0xd044
+   b setMemProtections           # Branch to set memory protections setup 0xd044
 
 checkforMemProtectOn:
    cmplwi cr6, r4, 3             # Check for 3 aka set mem protections ENABLED
-   MAKEBNE returnOne 		      # If not, branch to returnOne to exit 0xD05C
+   bne cr6, returnOne 		      # If not, branch to returnOne to exit 0xD05C
 
 setMemProtections:
    li r0, 0
@@ -310,9 +314,9 @@ returnTwo:
 # ============================================================================
 # Patch syscall table with address of our fake Syscall0 backdoor
 # ============================================================================
-MAKEPATCH 0x00001CD4 
+MAKEPATCH Syscall_Table 
 0:
-   .long 0x0000D004
+   .long HV_PP_Syscall0
 9:
 
 # ============================================================================
