@@ -33,6 +33,8 @@ call:buildPatchSection src\KHV\1888 khv_1888_vfuses_zeus
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses_devkit
 
+call:buildPatchSection src\KHV\6717 khv_6717_vfuses
+
 echo Done!
 
 echo.
@@ -66,6 +68,12 @@ call:buildPatchSection src\2BL\6752 cbb_6752_vfuses
 call:buildPatchSection src\2BL\7378 cbb_7378_vfuses
 
 call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
+
+echo Done!
+
+echo Building TEST patch files...
+
+call:buildPatchSection src\TEST test
 
 echo Done!
 
@@ -150,6 +158,21 @@ copy /b src\2BL\13121\cbb_13121_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + s
 
 echo Done!
 
+echo 6717 FreeBoot...
+
+mkdir output\6717
+
+REM *** Falcon/Zephyr/Xenon are all the same patch set
+copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6717\khv_6717_vfuses.bin output\6717\patches_g2mfalcon.bin
+copy output\6717\patches_g2mfalcon.bin output\6717\patches_g2mzephyr.bin
+copy output\6717\patches_g2mfalcon.bin output\6717\patches_g2mxenon.bin
+
+copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6717\khv_6717_vfuses.bin output\6717\patches_g2mjasper.bin
+
+REM *** use CB_B 7378 for elpis
+copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6717\khv_6717_vfuses.bin output\6717\patches_g2mxenon_ELPIS.bin
+
+echo Done!
 
 echo 1888 FreeBoot...
 
@@ -158,7 +181,7 @@ mkdir output\1888
 copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_zeus.bin output\1888\patches_g2mjasper.bin
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mfalcon.bin
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mxenon.bin
-copy /b src\2BL\4577\cbb_4577_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mzephyr.bin
+copy /b src\2BL\4577\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mzephyr.bin
 
 REM *** Zephyr A with Y1 uses the same GPU and 5772 CB as Xenon. If an elpis has been installed... bascially just a zephyr C
 copy output\1888\patches_g2mxenon.bin output\1888\patches_g2mzephyr_y1.bin
