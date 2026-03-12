@@ -49,7 +49,6 @@ MAKEPATCH 0x00007338
    cmplwi cr6, r11, 0xc
 9:
 
-
 MAKEPATCH 0x00007428
 0:
    bla 0xCFD0
@@ -344,18 +343,28 @@ MAKEPATCH 0x00009268 # HvxSecurityGetActivated
 9:
 
 # ============================================================================
+#	HvxKeysRsaPrvCrypt - Allow access to all XeKeys properties
+# ============================================================================
+MAKEPATCH 0x00009FF0 
+0:
+   b 0x30 #0xA020
+9:
+
+# ============================================================================
+# Bypass CB sig check - Replaces call to XeCryptBnQwBeSigVerify
+# There is no CD check in 6717
+# ============================================================================
+MAKEPATCH 0x00009534
+0:
+   li r3, 1
+9:
+
+# ============================================================================
 # 	NOP MachineCheck
 # ============================================================================
 MAKEPATCH 0x00009540
 0:
    nop
-9:
-
-# ============================================================================
-# 	Bypass CB sig check - Replaces call to XeCryptBnQwBeSigVerify
-# ============================================================================
-0:
-   li r3, 1
 9:
 
 # ============================================================================
@@ -383,11 +392,6 @@ MAKEPATCH 0x000095B4
    li r11, 1
 9:
 
-MAKEPATCH 0x00009FF0 # HvxKeysRsaPrvCrypt
-0:
-   MAKEBRANCH (0xA020) #b
-9:
-
 # ============================================================================
 #	HvpCompareXGD2MediaID - Always return true
 # ============================================================================
@@ -412,7 +416,6 @@ MAKEPATCH 0x0000A1D8
 # HV to change the fallback decryption key
 #
 # (Look in the DashLaunch changelog- these hooks were added in V3.0)
-#
 # ============================================================================
 MAKEPATCH 0x00003DC8
 0:
@@ -466,48 +469,56 @@ MAKEPATCH 0x000042F0
    nop
 9:
 
-# TODO patch HvxExpansionInstall???
+#
+# kernel patches :)
+#
 
-# ============================================================================
-# 	HvxExpansionInstall - Disable conditional branch after XeCryptBnQwBeSigVerify
-# ============================================================================	
-MAKEPATCH
+#=============================================================================
+# Patches XexpLoadXexHeaders to ignore xex media type check
+#=============================================================================
+KMAKEPATCH 0x8007718C
 0:
-	bne cr6, loc_2b8
-	li %r29, 0
-
-loc_2b8:
-	nop
-	nop
+   b 0x10 
 9:
 
-# ============================================================================
-#	HvpInstallExpansion - Disable XeKeysStatus check
-# ============================================================================
-MAKEPATCH
-0:
-	nop
-9:
-
-# ============================================================================
-#	HvpInstallExpansion - Disable KV Restricted Privs check
-# ============================================================================
-MAKEPATCH
-0:
-	nop
-9:
-
-# kernel patches
-
-
-KMAKEPATCH 0x8007718C # XexpLoadXexHeaders
-0:
-   KMAKEBRANCH 0x8007719c #  skip over BNE
-9:
-
-KMAKEPATCH 0x80077190 # XexpLoadXexHeaders
+KMAKEPATCH 0x80077190
 0:
    nop
+   nop
+   nop
+9:
+
+#=============================================================================
+# Patches branch to RtlImageXexHeaderString within XexpLoadFile
+#=============================================================================
+KMAKEPATCH 0x80077298
+0:
+   li r3, 0
+9:
+
+#=============================================================================
+# Patch within XexpLoadFile
+#=============================================================================
+KMAKEPATCH 0x800772EC
+0:
+   li r11, 0
+9:
+
+#=============================================================================
+# Patch within SfcxInspectLargeDataBlock
+#=============================================================================
+KMAKEPATCH 0x8008CD80
+0:
+   li r23, 0x10
+9:
+
+#=============================================================================
+# Patches to disable fatal error screen E66 (VdDisplayFatalError)
+# Caused by DVD drive (ERROR_XSS_CDROM_COULD_NOT_CREATE_DEVICE)
+#=============================================================================
+KMAKEPATCH 0x8008FF10
+0:
+   li r3, 0
    nop
    nop
 9:
@@ -558,15 +569,6 @@ KMAKEPATCH 0x800EC340 # XeKeysRevokeConvertError
 9:
 
 #=============================================================================
-# Patches XeCryptBnQwBeSigVerify
-#=============================================================================
-KMAKEPATCH 0x800F1300
-0:
-   li r3, 1
-   blr
-9:
-
-#=============================================================================
 # Patches XeKeysConsoleSignatureVerification
 #=============================================================================
 KMAKEPATCH 0x800ECBA0
@@ -578,15 +580,41 @@ KMAKEPATCH 0x800ECBA0
    blr
 9:
 
+KMAKEPATCH 0x800ECBF0
+0:
+   li r3, 1
+   KMAKEBRANCH(0x800ecc18)
+9:
+
 #=============================================================================
-# Patches SataDiskAuthenticateDevice (Disables hdd security sector verification)
-#
-# TODO: do HddSsAuthPatch here instead
-#============================================================================
-KMAKEPATCH 0x80117E88
+# Patches XeCryptBnQwBeSigVerify
+#=============================================================================
+KMAKEPATCH 0x800F1300
 0:
    li r3, 1
    blr
+9:
+
+#=============================================================================
+# Patches SataDiskAuthenticateDevice
+#============================================================================
+
+#============================================================================
+# Patch error handler in SataDiskAuthenticateDevice to return TRUE instead
+# of FALSE
+#============================================================================
+KMAKEPATCH 0x80118028
+0:
+   li r3, 1
+9:
+
+#============================================================================
+# Rather than calling VdDisplayFatalError to display an E69 (hehehehe),
+# jump to the error handler in SataDiskAuthenticateDevice
+#============================================================================
+KMAKEPATCH 0x80117EC8
+0:
+   KMAKEBRANCH 0x80118028
 9:
 
 #KMAKEPATCH 0x8011C9E0 # empty space for loading dashlaunch / guess no dashlaunch on 6717 so why is this here???
@@ -621,50 +649,5 @@ KMAKEPATCH 0x80078008
 0:
    li r3, 0
 9:
-
-#=============================================================================
-# Patch within SfcxInspectLargeDataBlock
-#=============================================================================
-KMAKEPATCH 0x8008CD80
-0:
-   li r23, 0x10
-9:
-
-#=============================================================================
-# Patch within XexpLoadFile
-#=============================================================================
-KMAKEPATCH 0x80077298
-0:
-   li r3, 0
-9:
-
-#=============================================================================
-# Patch within XexpLoadFile
-#=============================================================================
-KMAKEPATCH 0x800772EC
-0:
-   li r11, 0
-9:
-
-#=============================================================================
-# Patch within SataCdRomAP25Initialize
-#=============================================================================
-KMAKEPATCH 0x8008FF10
-0:
-   li r3, 0
-   nop
-   nop
-9:
-
-#=============================================================================
-# Patches XeKeysConsoleSignatureVerification
-#=============================================================================
-KMAKEPATCH 0x800ECBF0
-0:
-   li r3, 1
-   KMAKEBRANCH(0x800ecc18)
-9:
-
-# TODO disable E66?
 
 .long 0xffffffff
