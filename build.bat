@@ -156,7 +156,7 @@ REM *** Xenon uses the 5772 CB_B, same as falcon, so the patch sets are the same
 copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mxenon.bin
 
 REM *** Never thought i'd need to do a corona patch set but here we are
-copy /b src\2BL\13121\cbb_13121_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mcorona.bin
+copy /b src\2BL\13121\cbb_13121_vfuses.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mcorona.bin
 
 echo Done!
 

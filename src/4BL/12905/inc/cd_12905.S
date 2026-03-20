@@ -427,6 +427,29 @@ MAKEPATCH 0x00000FF4
 	li %r11, -0x27e2
 9:
 
+#
+# Note, the following patches are NOT part of the XeBuild default patch set,
+# rather they are from other sources and are useful for certain scenarios
+#
+
+#============================================================================
+# Replaces beq cr6, 0x14 with b 0x14 to avoid 0xB7 panic (UPDATE_MISSING)
+# if the image is built with empty patch slots
+#============================================================================
+MAKEPATCH 0xF90
+0:
+    b 0x14
+9:
+
+#============================================================================
+# Replaces beq cr6, 0x14 with b 0x14 to avoid 0xB3 panic (SHA_VERIFY)
+# if the image is built with a custom 5BL
+#============================================================================
+MAKEPATCH 0xD9C
+0:
+    b 0x14
+9:
+
 # done with patch section
 #============================================================================
    .long 0xFFFFFFFF
