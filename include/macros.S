@@ -105,6 +105,22 @@
 .endm
 
 #;Arg0 is destination address
+.macro KMAKEBEQ DAddress 
+.if(\DAddress)
+	#;Patch structure
+ 	beq (\DAddress-KBASE) - ((.-0b)+PatchAddr)
+.endif
+.endm
+
+#;Arg0 is destination address
+.macro KMAKEBEQCR6 DAddress 
+.if(\DAddress)
+	#;Patch structure
+ 	beq cr6, (\DAddress-KBASE) - ((.-0b)+PatchAddr)
+.endif
+.endm
+
+#;Arg0 is destination address
 .macro BLMAKEBRANCH DAddress
 		#;Patch structure
  	b	\DAddress - ((.-0b)+PatchAddr)

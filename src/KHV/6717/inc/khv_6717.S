@@ -630,6 +630,23 @@ KMAKEPATCH 0x80117EC8
 9:
 
 #============================================================================
+# Patch FatxProcessBootSector to ignore sector size limit, allowing drives
+# up to 2TB to function properly (Thanks @Eaton!)
+#============================================================================
+KMAKEPATCH 0x80099A74
+0:
+   # Check if sectors per cluster is a power of 2.
+   # Now, there will be no cluster size limit, but
+   # it's probably best to not make it too big...
+   cmplwi cr6, %r11, 0
+   KMAKEBEQCR6 0x80099A20
+   addi %r3, %r11, -1
+   and. %r3, %r3, %r11
+   KMAKEBEQ 0x80099AB8
+   KMAKEBRANCH 0x80099A20
+9:
+
+#============================================================================
 # During Phase1 initialization, after we've loaded xam.xex, branch to free
 # space so we can load launch.xex. This is a bit simpler of a function
 # compared to what 17559 does... this is closer to what RGLoader does.

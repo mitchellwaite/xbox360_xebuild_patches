@@ -510,18 +510,51 @@ KMAKEPATCH 0x800C0690
 9:
 
 #=============================================================================
-# Patches SataDiskAuthenticateDevice (Disables hdd security sector verification)
+# Patches SataDiskAuthenticateDevice
+#
+# Regular FreeBoot would have done the following at 0x800DD7C0
+#     li %r3, 1
+#     blr
+#
+# However, that breaks compat with FATXPlorer formatted drives with a SS and
+# "extra space"... this patch does full auth for retail for such drives but
+# still allows generic drives by patching the error path to return TRUE
 #============================================================================
-KMAKEPATCH 0x800DD7C0
+
+#============================================================================
+# Patch error handler in SataDiskAuthenticateDevice to return TRUE instead
+# of FALSE
+#============================================================================
+KMAKEPATCH 0x800DD964
 0:
    li %r3, 1
-   blr
 9:
 
-#
-# TODO we've got some *stuff* that needs to be done if we want DashLaunch and all that jazz to work
-# For now forget about it, that can come in V2 of the patch
-#
+#============================================================================
+# Rather than calling VdDisplayFatalError to display an E69 (hehehehe),
+# jump to the error handler in SataDiskAuthenticateDevice
+#============================================================================
+KMAKEPATCH 0x800DD808
+0:
+   KMAKEBRANCH 0x800DD964
+9:
+
+#============================================================================
+# Patch FatxProcessBootSector to ignore sector size limit, allowing drives
+# up to 2TB to function properly (Thanks @Eaton!)
+#============================================================================
+KMAKEPATCH 0x80080744
+0:
+   # Check if sectors per cluster is a power of 2.
+   # Now, there will be no cluster size limit, but
+   # it's probably best to not make it too big...
+   cmplwi cr6, %r11, 0
+   KMAKEBEQCR6 0x800806F0
+   addi %r3, %r11, -1
+   and. %r3, %r3, %r11
+   KMAKEBEQ 0x80080788
+   KMAKEBRANCH 0x800806F0
+9:
 
 #============================================================================
 # During Phase1 initialization, after we've loaded xam.xex, branch to free
