@@ -17,6 +17,10 @@
 # Functions within the patches
 .set FixFusesAddr,   0xD020
 .set HV_PP_Syscall0, 0xD030
+
+# Patches HvxStartupProcessors for JTAGs
+.set HV_StartProcPatchAddr, 0xD100
+
 .set HV_setmemprot,  0x1570
 
 # ============================================================================
@@ -190,10 +194,21 @@ MAKEPATCH 0x0000CF80
 
    # Load VFuses
    bla HvpGetFlashBase # 0x998
+
+.ifdef jtag_vfuses
+   # JTAGs use virtual fuses too!
+   # They're always at address 0x95000, don't need to
+   # do any patch slot size/count calculations 
+   oris %r4, %r3, 9
+   ori %r4, %r4, 0x5000
+   nop
+   nop
+.else
    lwz %r4, 0x64(%r3)	# 0x64 in NAND is the patch slot address
    lwz %r5, 0x70(%r3)  # 0x70 in NAND is the patch slot size
    add %r3, %r3, %r4
    add %r4, %r3, %r5
+.endif
 
    lis %r3, 1
 
@@ -318,6 +333,29 @@ MAKEPATCH Syscall_Table
 0:
    .long HV_PP_Syscall0
 9:
+
+.ifdef jtag_vfuses
+# ============================================================================
+# For JTAGs only, we need to patch HvxStartupProcessors
+#
+# The following patch replaces (addis r4, r3, -3) with a branch to our custom
+# function, the custom function will then branch back to the instruction
+# after what we replaced
+# ============================================================================
+MAKEPATCH HV_StartProcPatchAddr
+0:
+   lis %r4, -0x8000
+   sldi %r4, %r4, 0x20
+   oris %r4, %r4, 0x100
+   ori %r4, %r4, 0x3080
+   ba 0x1C50
+9:
+
+MAKEPATCH 0x1C4C
+0:
+   ba HV_StartProcPatchAddr
+9:
+.endif
 
 # ============================================================================
 #       HvxSecurity Functions  (sets machine acct flags)

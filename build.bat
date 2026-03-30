@@ -34,6 +34,7 @@ call:buildPatchSection src\KHV\1838 khv_1838_vfuses
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses_devkit
 
 call:buildPatchSection src\KHV\6717 khv_6717_vfuses
+call:buildPatchSection src\KHV\6717 khv_6717_jtag
 
 echo Done!
 
