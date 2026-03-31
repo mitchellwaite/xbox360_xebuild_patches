@@ -21,6 +21,9 @@
 .set HV_PP_Syscall0, 0xFB00
 .set HV_DevkitXexKeyCheck, 0x1620
 
+# Patches HvxStartupProcessors for JTAGs
+.set HV_StartProcPatchAddr, 0xFC00
+
 # ============================================================================
 #	Branch to HV flag fixer function
 # ============================================================================
@@ -209,9 +212,19 @@ MAKEPATCH HV_FlagFixer
    sth %r3, 6(0)
 
    # Load the virtual fuses from NAND
+   bla HV_HvpGetFlashBaseAddress
+
+.ifdef jtag_vfuses
+   # JTAGs use virtual fuses too!
+   # They're always at address 0x95000, don't need to
+   # do any patch slot size/count calculations 
+   oris %r4, %r3, 9
+   ori %r4, %r4, 0x5000
+   nop
+   nop
+.else
    # 0x64 (patch slot address) 0x70 (patch slot size)
    # let us calculate the location of the vfuses
-   bla HV_HvpGetFlashBaseAddress
    lwz %r4, 0x64(%r3)
    lwz %r5, 0x70(%r3)
 
@@ -219,6 +232,7 @@ MAKEPATCH HV_FlagFixer
    # the second patch slot, comment this out if you use the 1st
    add %r3, %r3, %r4
    add %r4, %r3, %r5
+.endif
 
    lis %r3, 1
    # 0x60 bytes, 0xC 64bit vals to copy
@@ -349,6 +363,30 @@ MAKEPATCH Syscall_Table
 0:
    .long HV_PP_Syscall0
 9:
+
+.ifdef jtag_vfuses
+# ============================================================================
+# For JTAGs only, we need to patch HvxStartupProcessors
+#
+# The following patch replaces (addis r4, r3, -3) with a branch to our custom
+# function, the custom function will then branch back to the instruction
+# after what we replaced
+# ============================================================================
+MAKEPATCH HV_StartProcPatchAddr
+0:
+   lis %r4, -0x8000
+   sldi %r4, %r4, 0x20
+   oris %r4, %r4, 0x100
+   ori %r4, %r4, 0x3080
+   ba 0x203C
+9:
+
+MAKEPATCH 0x2038
+0:
+   ba HV_StartProcPatchAddr
+9:
+.endif
+
 
 # ============================================================================
 #	HvxKeysRsaPrvCrypt - Allow access to all XeKeys properties

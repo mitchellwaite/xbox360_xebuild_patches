@@ -29,6 +29,7 @@ call:buildPatchSection src\KHV\17559 hddssauth
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses_zeus
+call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea_jtag
 
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses_devkit
