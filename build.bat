@@ -185,7 +185,7 @@ mkdir output\1888
 copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_zeus.bin output\1888\patches_g2mjasper.bin
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mfalcon.bin
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mxenon.bin
-copy /b src\2BL\4577\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mzephyr.bin
+copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mzephyr.bin
 
 REM *** Zephyr A with Y1 uses the same GPU and 5772 CB as Xenon. If an elpis has been installed... bascially just a zephyr C
 copy output\1888\patches_g2mxenon.bin output\1888\patches_g2mzephyr_y1.bin
