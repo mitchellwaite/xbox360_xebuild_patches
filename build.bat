@@ -81,6 +81,13 @@ call:buildPatchSection src\TEST test
 
 echo Done!
 
+
+echo Building XAM patch files...
+
+call:buildPatchSection src\XAM\17489_RGLoader rglXam
+
+echo Done!
+
 echo.
 echo Assembling XeBuild patch sets...
 
