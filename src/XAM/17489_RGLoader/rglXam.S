@@ -237,7 +237,7 @@ MAKEPATCH 0x81D275A4
 # ============================================================================
 # CXNetLogonTask::CXNetLogonTask
 # NOPs out a breakpoint and spoofs the client version
-# but i'd expect 4497 -> 17559
+# Standard RGL just patches the instruction at 0x81823314
 # ============================================================================
 MAKEPATCH 0x81823310
 0:
