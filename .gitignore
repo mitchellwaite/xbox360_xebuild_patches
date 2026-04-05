@@ -2,3 +2,4 @@
 /tools/output
 **/__pycache__/
 src/**/*.bin
+src/**/*.rglp

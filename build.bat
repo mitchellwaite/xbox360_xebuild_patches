@@ -85,6 +85,8 @@ echo Done!
 echo Building XAM patch files...
 
 call:buildPatchSection src\XAM\17489_RGLoader rglXam
+del src\XAM\17489_RGLoader\rglXam.rglp
+move src\XAM\17489_RGLoader\rglXam.bin src\XAM\17489_RGLoader\rglXam.rglp
 
 echo Done!
 
