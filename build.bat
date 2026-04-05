@@ -34,6 +34,9 @@ call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea_jtag
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses_devkit
 
+call:buildPatchSection src\KHV\1839 khv_1839_vfuses
+call:buildPatchSection src\KHV\1839 khv_1839_vfuses_devkit
+
 call:buildPatchSection src\KHV\6717 khv_6717_vfuses
 call:buildPatchSection src\KHV\6717 khv_6717_jtag
 
@@ -237,6 +240,35 @@ copy output\1838_G2M\patches_g2mxenon.bin output\1838_G2M\patches_g2mfalcon.bin
 copy output\1838_G2M\patches_g2mxenon.bin output\1838_G2M\patches_g2mjasper.bin
 
 echo Done!
+
+REM *** ditto for 1839
+echo 1839 XDKBuild DevGL...
+
+mkdir output\1839_DEVGL
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_devgl_1838.bin + src\KHV\1839\khv_1839_vfuses.bin output\1839_DEVGL\patches_g2mxenon.bin
+copy output\1839_DEVGL\patches_g2mxenon.bin output\1839_DEVGL\patches_g2mzephyr.bin
+copy output\1839_DEVGL\patches_g2mxenon.bin output\1839_DEVGL\patches_g2mfalcon.bin
+copy output\1839_DEVGL\patches_g2mxenon.bin output\1839_DEVGL\patches_g2mjasper.bin
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_devkit_1838.bin + src\KHV\1839\khv_1839_vfuses_devkit.bin output\1839_DEVGL\patches_devxenon.bin
+copy output\1839_DEVGL\patches_devxenon.bin output\1839_DEVGL\patches_devzephyr.bin
+copy output\1839_DEVGL\patches_devxenon.bin output\1839_DEVGL\patches_devfalcon.bin
+copy output\1839_DEVGL\patches_devxenon.bin output\1839_DEVGL\patches_devjasper.bin
+
+echo Done!
+
+echo 1839 XDKBuild Glitch2m...
+
+mkdir output\1839_G2M
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_glitch2m_1838.bin + src\KHV\1839\khv_1839_vfuses.bin output\1839_G2M\patches_g2mxenon.bin
+copy output\1839_G2M\patches_g2mxenon.bin output\1839_G2M\patches_g2mzephyr.bin
+copy output\1839_G2M\patches_g2mxenon.bin output\1839_G2M\patches_g2mfalcon.bin
+copy output\1839_G2M\patches_g2mxenon.bin output\1839_G2M\patches_g2mjasper.bin
+
+echo Done!
+
 
 echo.
 echo SHA256 hashes:
