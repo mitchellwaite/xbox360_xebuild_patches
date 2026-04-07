@@ -23,6 +23,9 @@ call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_trinitybb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_coronabb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_devkit
 
+call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_flash
+call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_sb
+
 call:buildPatchSection src\KHV\17559 khv_17559_vfuses
 call:buildPatchSection src\KHV\17559 hddssauth
 
@@ -156,6 +159,13 @@ copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_d
 copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devfalcon.bin
 
 echo Done!
+
+echo 15513 XDKBuild...
+
+mkdir output\15513_XDKBuild
+
+REM *** For XDKBuild, the patch sets for 16mb machines are all identical as they use the same loaders and kernel
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15513_XDKBuild\khv_vfuses_sb.bin output\15513_XDKBuild\patches_g2mfalcon.bin
 
 echo 17559 FreeBoot...
 
