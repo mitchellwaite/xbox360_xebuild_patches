@@ -53,6 +53,7 @@ call:buildPatchSection src\4BL\17489 sd_vfuses_bb
 call:buildPatchSection src\4BL\17489 sd_vfuses_sb
 call:buildPatchSection src\4BL\17489 sd_vfuses_devkit
 call:buildPatchSection src\4BL\17489 sd_vfuses_jtag
+call:buildPatchSection src\4BL\17489 sd_vfuses_c80e
 
 call:buildPatchSection src\4BL\12611 sd_vfuses_glitch2m_1838
 call:buildPatchSection src\4BL\12611 sd_vfuses_devgl_1838
@@ -143,6 +144,7 @@ copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mfalcon.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mtrinity.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mcorona.bin
+copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mwinchester.bin
 
 REM *** BB consoles all have different patch sets. C'est la vie.
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\17489_XDKBuild\khv_vfuses_jasperbb.bin output\17489_XDKBuild\patches_g2mjasper_flash.bin
@@ -165,8 +167,17 @@ echo 15513 XDKBuild...
 
 mkdir output\15513_XDKBuild
 
-REM *** For XDKBuild, the patch sets for 16mb machines are all identical as they use the same loaders and kernel
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15513_XDKBuild\khv_vfuses_sb.bin output\15513_XDKBuild\patches_g2mfalcon.bin
+REM *** For 15513, the patch sets for 16mb machines are all identical as they use the same loaders and kernel. XeLL ends up at 0xE0000
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_c80e.bin + src\KHV\15513_XDKBuild\khv_vfuses_sb.bin output\15513_XDKBuild\patches_g2mjasper.bin
+copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mxenon.bin
+copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mxenon_ELPIS.bin
+copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mzephyr.bin
+copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mfalcon.bin
+copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mtrinity.bin
+copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mcorona.bin
+copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mwinchester.bin
+
+
 
 echo 17559 FreeBoot...
 

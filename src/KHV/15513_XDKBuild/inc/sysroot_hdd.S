@@ -20,7 +20,7 @@ KMAKEPATCH 0x801C1850
    .align 2
 9:
 
-MAKEPATCH 0x8102C 
+KMAKEPATCH 0x8008102C 
 0:
    nop              #  nop out the hardware flags check
    lis   %r11, RootPatch@h
@@ -31,28 +31,28 @@ MAKEPATCH 0x8102C
 #	System root panic function 
 # ============================================================================
 
-.set  SysRootRecovery,  0x81050 
-.set  SysRootAddr, 0x81090
+.set  SysRootRecovery,  0x80081050 
+.set  SysRootAddr, 0x80081090
 
-MAKEPATCH 0x81090
+KMAKEPATCH 0x80081090
 0:
    b -0x40
    #b (SysRootAddr - SysRootRecovery)
 9:
 
-   MAKEPATCH 0x810B0
+KMAKEPATCH 0x800810B0
 0:
    b -0x60
    #b (SysRootAddr+0x20 - SysRootRecovery)
 9:
 
-   MAKEPATCH 0x810DC
+KMAKEPATCH 0x800810DC
 0:
    b -0x8C
    #b (SysRootAddr+0x4C - SysRootRecovery)
 9:
 
-   MAKEPATCH 0x81158
+KMAKEPATCH 0x80081158
 0:
    b -0x108
    #b (SysRootAddr+0x68 - SysRootRecovery)
