@@ -54,6 +54,7 @@ call:buildPatchSection src\4BL\17489 sd_vfuses_sb
 call:buildPatchSection src\4BL\17489 sd_vfuses_devkit
 call:buildPatchSection src\4BL\17489 sd_vfuses_jtag
 call:buildPatchSection src\4BL\17489 sd_vfuses_c80e
+call:buildPatchSection src\4BL\17489 sd_vfuses_devkit_e4
 
 call:buildPatchSection src\4BL\12611 sd_vfuses_glitch2m_1838
 call:buildPatchSection src\4BL\12611 sd_vfuses_devgl_1838
@@ -176,6 +177,23 @@ copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g
 copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mtrinity.bin
 copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mcorona.bin
 copy output\15513_XDKBuild\patches_g2mjasper.bin output\15513_XDKBuild\patches_g2mwinchester.bin
+
+REM TODO: we're going to assume for now that all the BB machines are the same, but the SD patch might need to be different
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\15513_XDKBuild\khv_vfuses_flash.bin output\15513_XDKBuild\patches_g2mjasper_flash.bin
+copy output\15513_XDKBuild\patches_g2mjasper_flash.bin output\15513_XDKBuild\patches_g2mtrinity_flash.bin
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_c80e.bin + src\KHV\15513_XDKBuild\khv_vfuses_flash.bin output\15513_XDKBuild\patches_g2mcorona_flash.bin
+copy output\15513_XDKBuild\patches_g2mcorona_flash.bin output\15513_XDKBuild\patches_g2mwinchester_flash.bin
+
+
+REM *** This is a bit hacky for a devkit image...
+REM *** The "devkit" SD patch looks for XeLL at 0xE4000 because XeBuild can't be consistent in where the start
+REM *** of the filesystem in a small block image is. SB patches are ignored pretty much.. just here to make sure
+REM *** the sections in the patch file are correct and xeBuild doesn't freak out (plz open source xebuild)
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_devkit_e4.bin + src\KHV\15513_XDKBuild\khv_vfuses_flash.bin output\15513_XDKBuild\patches_devjasper.bin
+copy output\15513_XDKBuild\patches_devjasper.bin output\15513_XDKBuild\patches_devxenon.bin
+copy output\15513_XDKBuild\patches_devjasper.bin output\15513_XDKBuild\patches_devzephyr.bin
+copy output\15513_XDKBuild\patches_devjasper.bin output\15513_XDKBuild\patches_devfalcon.bin
 
 
 
