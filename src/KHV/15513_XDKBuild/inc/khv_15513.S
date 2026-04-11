@@ -467,6 +467,21 @@ KMAKEPATCH WgcBindToUserNop
    nop
 9:
 
+# ============================================================================
+# Patch SataDiskAuthenticateDevice
+# ============================================================================
+
+# goto error path instead of VdDisplayFatalError
+KMAKEPATCH 0x8019ABB4
+0:
+   MAKEBRANCH 8019ACD0
+9:
+
+# patch the error path to return a success
+KMAKEPATCH 0x8019ACD0
+0:
+   li %r3, 1
+9:
 
 #============================================================================
       .long 0xFFFFFFFF

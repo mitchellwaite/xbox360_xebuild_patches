@@ -15,7 +15,7 @@ KMAKEPATCH 0x801C1850
 .long (RootPatch+8) #//ptr to string
    
 1:
-   .string "\\Device\\Harddisk0\\Partition1\\15513\0"
+   .string "\\Device\\Harddisk0\\Partition1\\Filesystems\\15513-dev\0"
 2:
    .align 2
 9:
