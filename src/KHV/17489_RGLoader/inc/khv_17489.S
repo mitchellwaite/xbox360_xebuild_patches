@@ -5,6 +5,32 @@
 #   Patches for Hypervisor 21256.18_17489
 #============================================================================
 
+.ifdef consoletype_jtag
+# In 17489, we've got some room right after HvxStartupProcessors
+.set HV_StartProcPatchAddr, 0xCE8
+
+# ============================================================================
+# For JTAGs only, we need to patch HvxStartupProcessors
+#
+# The following patch replaces (addis r4, r3, -3) with a branch to our custom
+# function, the custom function will then branch back to the instruction
+# after what we replaced
+# ============================================================================
+MAKEPATCH HV_StartProcPatchAddr
+0:
+   lis %r4, -0x8000
+   sldi %r4, %r4, 0x20
+   oris %r4, %r4, 0x100
+   ori %r4, %r4, 0x3080
+   ba 0xC64
+9:
+
+MAKEPATCH 0xC60
+0:
+   ba HV_StartProcPatchAddr
+9:
+.endif
+
 #============================================================================
 # Patches out a branch in HvxKeysSaveKeyVault that results in error C8000007
 #============================================================================
@@ -262,6 +288,10 @@ MAKEPATCH 0x00030C2C
 
 .ifdef consoletype_devgl64
    .set nand_patch_offset, 0x00e4000
+.endif
+
+.ifdef consoletype_jtag
+    .set nand_patch_offset, 0x95000
 .endif
 
    .set HvpGetFlashBaseAddress, 0x0000068C

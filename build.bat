@@ -22,6 +22,7 @@ call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jasperbb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_trinitybb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_coronabb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_devkit
+call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jtag
 
 call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_sb
@@ -51,7 +52,7 @@ echo Building 4BL patch files...
 call:buildPatchSection src\4BL\17489 sd_vfuses_bb
 call:buildPatchSection src\4BL\17489 sd_vfuses_sb
 call:buildPatchSection src\4BL\17489 sd_vfuses_devkit
-call:buildPatchSection src\4BL\17489 sd_shadowboot
+call:buildPatchSection src\4BL\17489 sd_vfuses_jtag
 
 call:buildPatchSection src\4BL\12611 sd_vfuses_glitch2m_1838
 call:buildPatchSection src\4BL\12611 sd_vfuses_devgl_1838

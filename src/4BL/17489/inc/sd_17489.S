@@ -5,7 +5,7 @@
 .globl _start
 _start:
 
-.ifdef patchengine
+
 #============================================================================
 # Branch to CDXell... this replaces the first instruction at the entrypoint
 # of the SD with a function call
@@ -15,6 +15,7 @@ MAKEPATCH 0x310
    bl 0x4c20 
 9:
 
+.ifdef patchengine
 #============================================================================
 # Rather than calling the rfid instruction to launch the kernel, branch to
 # the patch engine to apply 
@@ -23,6 +24,7 @@ MAKEPATCH 0x6B4
 0:
    b       0x4b48
 9:
+.endif
 
 #============================================================================
 # Replace the function call to 0xA58, effectively making it always return 0
@@ -41,8 +43,6 @@ MAKEPATCH 0xD7C
    nop
 9:
 
-.endif
-
 #============================================================================
 # Patch out SE hash check panic (Allows arbitrary SE/CE to run)
 #============================================================================
@@ -59,10 +59,20 @@ MAKEPATCH 0xA80
 0:
    lis     %r3, 0x1800
    ori     %r3, %r3, 0
+.ifdef jtag_vfuses
+   # JTAGs use virtual fuses too!
+   # They're always at address 0x95000, don't need to
+   # do any patch slot size/count calculations 
+   oris %r4, %r3, 9
+   ori %r4, %r4, 0x5000
+   nop
+   nop
+.else   
    lwz     %r4, 0x64(%r3)
    lwz     %r5, 0x70(%r3)
    add     %r3, %r3, %r4
    add     %r4, %r3, %r5
+.endif
    mr      %r3, %r10
    li      %r5, 0xc
    bl      0x460
@@ -70,7 +80,6 @@ MAKEPATCH 0xA80
 9:
 .endif
 
-.ifdef patchengine
 #============================================================================
 # PCI init, SMC handshake, patching engine, Boot XeLL
 # This section of the patch is based on CDXell
@@ -412,8 +421,6 @@ set_bits_for_xell_in_flashfs:
 .endif
 
 9:
-
-.endif
 
 #============================================================================
    .long 0xFFFFFFFF
