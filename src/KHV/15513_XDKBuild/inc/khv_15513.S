@@ -474,7 +474,7 @@ KMAKEPATCH WgcBindToUserNop
 # goto error path instead of VdDisplayFatalError
 KMAKEPATCH 0x8019ABB4
 0:
-   MAKEBRANCH 8019ACD0
+   KMAKEBRANCH 0x8019ACD0
 9:
 
 # patch the error path to return a success
