@@ -2,27 +2,38 @@
 
 .include "macros.S"
 
-# Extend the size of the CD
+#============================================================================
+# Extend the size of CD
+#============================================================================ 
 MAKEPATCH 0x0000000C
 0:
 	.long 0x00005830
 9:
 
+#============================================================================
+# Print an exclamation mark to UART to show we've reached CD
+#============================================================================ 
 MAKEPATCH 0x00000260
 0:
-	bl 0x5778
+	MAKEBRANCHL 0x5778
 9:
 
 MAKEPATCH 0x000003E0
 0:
-	bl 0x57a8
+	MAKEBRANCHL 0x57a8
 9:
 
+#============================================================================
+# Jump to the patch engine before starting the kernel
+#============================================================================ 
 MAKEPATCH 0x000005A4
 0:
-	b 0x57b4
+	MAKEBRANCH 0x57b4
 9:
 
+#============================================================================
+# vfuse patch
+#============================================================================
 MAKEPATCH 0x00000940
 0:
 	addi %r11, %r11, 1
@@ -34,21 +45,8 @@ MAKEPATCH 0x00000948
 	addi %r9, %r9, 0x3360
 9:
 
-# Skip loading the patch slots
-MAKEPATCH 0x00000DF4
-0:
-	li %r3, 0
-9:
-
-# Avoid panic 0xB7 (empty patch slots)
-MAKEPATCH 0x00000E18
-0:
-	b 0x14
-9:
-
 MAKEPATCH 0x00005778
 0:
-
 	li %r3, 0x2e
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
@@ -57,43 +55,58 @@ MAKEPATCH 0x00005778
 	slwi %r3, %r3, 0x18
 	stw %r3, 0x1014(%r4)
 
+wait_for_character_sent:
 	lwz %r3, 0x1018(%r4)
 	rlwinm. %r3, %r3, 0, 6, 6
-	beq 0x5794
+	beq wait_for_character_sent
 
 	li %r3, 0x200
 	blr
 
+loc_57a8:
 	lis %r3, 1
+
+# this is 6C40 in the jasper jtag patch set for some reason
 	ori %r3, %r3, 0x6500
 	blr
 
-	mfmsr r7
+loc_57b4:
+	mfmsr %r7
 	li %r8, 0x10
-	andc %r8, r7, %r8
+	andc %r8, %r7, %r8
 	lis %r3, -0x8000
+
+# 57c4
 	sldi %r3, %r3, 0x20
 	oris %r3, %r3, 0x100
 	ori %r3, %r3, 0x2000
 	addi %r3, %r3, -4
+
+loc_57d4:
 	mtmsrd %r8
 	isync
 	lwzu %r4, 4(%r3)
 	cmpwi %r4, -1
-	beq 0x581c
+
+# 57e4
+	beq loc_581c
 	addi %r4, %r4, -4
-	lwzu r6, 4(%r3)
-	mtctr r6
+	lwzu %r6, 4(%r3)
+	mtctr %r6
+
+loc_57f4:
 	mtmsrd %r8
 	isync
-	lwzu r6, 4(%r3)
-	mtmsrd r7
+	lwzu %r6, 4(%r3)
+	mtmsrd %r7
 	isync
-	stwu r6, 4(%r4)
+	stwu %r6, 4(%r4)
 	dcbst 0, %r4
 	icbi 0, %r4
-	bdnz 0x57f4
-	b 0x57d4
+	bdnz loc_57f4
+	b loc_57d4
+
+loc_581c:
 	sync
 	isync
 	rfid
@@ -102,3 +115,8 @@ MAKEPATCH 0x00005778
 9:
 
 # done with patch section
+
+#============================================================================
+   .long 0xFFFFFFFF
+   .end
+#============================================================================

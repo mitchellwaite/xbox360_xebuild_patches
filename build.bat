@@ -64,6 +64,8 @@ call:buildPatchSection src\4BL\12611 sd_shadowboot
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
 call:buildPatchSection src\4BL\9452 cd_9452_glitch2_rgl
 
+call:buildPatchSection src\4BL\8453 cd_8453_jtag
+
 call:buildPatchSection src\4BL\12905 cd_12905_vfuses
 
 echo Done!
@@ -81,6 +83,8 @@ call:buildPatchSection src\2BL\6752 cbb_6752_vfuses
 call:buildPatchSection src\2BL\7378 cbb_7378_vfuses
 
 call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
+
+call:buildPatchSection src\2BL\5771 cbb_5771_jtag
 
 echo Done!
 
