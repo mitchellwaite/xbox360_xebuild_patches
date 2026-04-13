@@ -65,6 +65,7 @@ call:buildPatchSection src\4BL\9452 cd_9452_vfuses
 call:buildPatchSection src\4BL\9452 cd_9452_glitch2_rgl
 
 call:buildPatchSection src\4BL\8453 cd_8453_jtag
+call:buildPatchSection src\4BL\8453 cd_8453_jtag_rgl
 
 call:buildPatchSection src\4BL\12905 cd_12905_vfuses
 
