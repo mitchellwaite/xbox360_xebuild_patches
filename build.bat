@@ -84,6 +84,13 @@ call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
 
 echo Done!
 
+echo Building 1BL patch files...
+
+call:buildPatchSection src\1BL\1411 ca_1411_freeboot
+
+echo Done!
+
+
 echo Building TEST patch files...
 
 call:buildPatchSection src\TEST test
