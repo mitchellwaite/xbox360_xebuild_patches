@@ -28,7 +28,7 @@ MAKEPATCH 0x000042AC
 MAKEPATCH 0x00007E88
 0:
 print_dot_uart:
-	li %r3, 0x2e
+	li %r3, '!'
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
