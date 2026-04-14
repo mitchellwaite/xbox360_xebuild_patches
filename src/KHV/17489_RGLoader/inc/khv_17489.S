@@ -29,7 +29,23 @@ MAKEPATCH 0xC60
 0:
    ba HV_StartProcPatchAddr
 9:
+
+# Patch out KdNetSaveCurrentParameters, supposedly kdnet breaks JTAGs?
+KMAKEPATCH 0x800816A4
+0:
+	nop
+9:
+
 .endif
+
+#============================================================================
+# Patch the hypervisor panic POST so that if the HV panics we know whether
+# or not we at least *tried* to go through the patch code in the CD
+#============================================================================
+MAKEPATCH 0x00000230
+0:
+	li %r3, 0xF3
+9:
 
 #============================================================================
 # Patches out a branch in HvxKeysSaveKeyVault that results in error C8000007
@@ -269,6 +285,7 @@ MAKEPATCH 0x00030C2C
 # Jasper BB: 0x100000
 # Trinity BB: 0xF0000
 # Corona BB: 0xe0000
+# JTAG: 0x95000
 
 .ifdef consoletype_jasperbb
    .set nand_patch_offset, 0x0100000
@@ -323,7 +340,9 @@ MAKEPATCH 0x00030C2C
    sth     %r3, 0x6(%r0)      # store new flag
    cmpldi   %r21,  0    # do what we patched
 
-   li      %r3, '!'
+	# print a character to UART to indicate we've
+	# successfully branched to the 5BL
+   li      %r3, '$'
    bla     PrintChar
    li      %r3, '\n'
    bla     PrintChar
@@ -912,7 +931,7 @@ loc_B610:
 	.align 2
 9:
 
-	KMAKEPATCH ldBranchAddr
+KMAKEPATCH ldBranchAddr
 0:
 	KMAKEBRANCHL loaderFuncAddr
 9:
