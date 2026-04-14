@@ -139,10 +139,25 @@ MAKEPATCH 0x00007130
 	nop
 9:
 
+#==================================================================================
+# loadfare generated patches
+# - disable entire fuse check routine in the cb
+# - disable smc hash check
+#==================================================================================
+MAKEPATCH 0x000004D0
+0:
+	nop
+9:
+
+MAKEPATCH 0x000071B8
+0:
+	b 0x14
+9:
+
 MAKEPATCH 0x00009340
 0:
 # print an exclamation mark to UART
-	li %r3, 0x2e
+	li %r3, '@'
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
