@@ -11,17 +11,23 @@ MAKEPATCH 0x0000000C
 9:
 
 #============================================================================
-# Print an exclamation mark to UART to show we've reached CD
+# Print a character to UART to show we've reached CD
 #============================================================================ 
 MAKEPATCH 0x00000260
 0:
 	MAKEBRANCHL 0x5778
 9:
 
+#============================================================================
+# Jump to a function that adjusts the next BL location to load 5BL from
+# the standard spot in NAND rather than from directly after the JTAG CD
+#============================================================================
+.ifndef use_jtag_5bl 
 MAKEPATCH 0x000003E0
 0:
 	MAKEBRANCHL 0x57a8
 9:
+.endif
 
 #============================================================================
 # Jump to the patch engine before starting the kernel
@@ -47,7 +53,7 @@ MAKEPATCH 0x00000948
 
 MAKEPATCH 0x00005778
 0:
-	li %r3, 0x2e
+	li %r3, '#'
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
@@ -65,9 +71,7 @@ wait_for_character_sent:
 
 loc_57a8:
 	lis %r3, 1
-
-# this is 6C40 in the jasper jtag patch set for some reason
-	ori %r3, %r3, 0x6500
+	ori %r3, %r3, jtag_5bl_offset
 	blr
 
 loc_57b4:
@@ -75,8 +79,6 @@ loc_57b4:
 	li %r8, 0x10
 	andc %r8, %r7, %r8
 	lis %r3, -0x8000
-
-# 57c4
 	sldi %r3, %r3, 0x20
 	oris %r3, %r3, 0x100
 	ori %r3, %r3, 0x2000
@@ -86,7 +88,7 @@ loc_57d4:
 	mtmsrd %r8
 	isync
 	lwzu %r4, 4(%r3)
-	cmpwi %r4, -1
+	cmpwi %r4, -1 # If we're seeing 0xFFFFFFFF we're done patching
 
 # 57e4
 	beq loc_581c
@@ -114,22 +116,43 @@ loc_581c:
 	.long 0x00000000
 9:
 
-.ifdef rgloader
-
 #============================================================================
-# NOP out the call to post_output for 0x50/0x51 (load patch slot)
+# Disable panic 0xB1 (VERIFY_OFFSET)
 #============================================================================
-MAKEPATCH 0x00000DD4
+MAKEPATCH 0x00000AA8
 0:
 	nop
 9:
 
 #============================================================================
-# Disable panic 0xB3 (5BL signature check)
+# Disable panic 0xB2 (VERIFY_OFFSET)
 #============================================================================
-MAKEPATCH 0x00000C48
+MAKEPATCH 0x00000AEC
 0:
 	nop
+9:
+
+MAKEPATCH 0x00000B00
+0:
+	nop
+9:
+
+MAKEPATCH 0x00000B10
+0:
+	nop
+9:
+
+MAKEPATCH 0x00000B24
+0:
+	MAKEBRANCH 0x00000B38
+9:
+
+#============================================================================
+# Disable panic 0xB3 (5BL signature check)
+#============================================================================
+MAKEPATCH 0x00000C38
+0:
+	b 0x14
 9:
 
 #============================================================================
@@ -143,15 +166,44 @@ MAKEPATCH 0x00000C7C
 #============================================================================
 # Disable panic 0xB5 (VERIFY_OFFSET_6BL)
 #============================================================================
-MAKEPATCH 0x00000D28
+MAKEPATCH 0x00000CDC
 0:
 	nop
 9:
 
+MAKEPATCH 0x00000CEC
+0:
+	nop
+9:
+
+MAKEPATCH 0x00000CF8
+0:
+	nop
+9:
+
+MAKEPATCH 0x00000D04
+0:
+	nop
+9:
+
+MAKEPATCH 0x00000D18
+0:
+	MAKEBRANCH 0xD2C
+9:
+
 #============================================================================
-# Disable panic 0xB6 (DECODE_FUSES)
+# Disable panic 0xB6 (DECODE_FUSES) by disabling fusechecks in CD
 #============================================================================
-MAKEPATCH 0x000009CC
+MAKEPATCH 0x00000C98
+0:
+	li %r3, 0
+9:
+
+.ifdef skip_patch_slots
+#============================================================================
+# NOP out the call to post_output for 0x50/0x51 (load patch slot)
+#============================================================================
+MAKEPATCH 0x00000DD4
 0:
 	nop
 9:
@@ -166,6 +218,7 @@ MAKEPATCH 0x00000D88
 	nop
 	MAKEBRANCH 0xE10
 9:
+.endif
 
 #============================================================================
 # Disable panic 0xB7 (UPDATE_MISSING)
@@ -176,15 +229,18 @@ MAKEPATCH 0x00000E28
 9:
 
 #============================================================================
-# I really don't know what this does but it's in the RGL jtag patch set
-# and it's at the end of the function that loads the patch sets and such
+# TODO: I really don't know why RGL has this patch, it effectively means we'll
+# write 0x00 to the POST bus rather than 0x52 when we branch to 5BL
 #============================================================================
 MAKEPATCH 0x00000E30
 0:
 	li %r4, 0
 9:
 
-# This is just some empty space
+# =================================================================================
+# remove unpaired bit from bootloader flags
+# TODO is this even needed when all the hypervisors have flag fixers?
+# =================================================================================
 MAKEPATCH 0x00001024
 0:
 	or %r11, %r11, %r10
@@ -196,8 +252,6 @@ MAKEPATCH 0x00000E3C
 0:
 	MAKEBRANCH 0x1024
 9:
-
-.endif
 
 # done with patch section
 
