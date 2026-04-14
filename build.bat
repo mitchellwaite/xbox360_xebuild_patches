@@ -16,6 +16,7 @@ call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_jasperbb
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_trinitybb
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_coronabb
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_devkit
+call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_jtag
 
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_sb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jasperbb
@@ -64,8 +65,9 @@ call:buildPatchSection src\4BL\12611 sd_shadowboot
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
 call:buildPatchSection src\4BL\9452 cd_9452_glitch2_rgl
 
-call:buildPatchSection src\4BL\8453 cd_8453_jtag
+call:buildPatchSection src\4BL\8453 cd_8453_jtag_falcon
 call:buildPatchSection src\4BL\8453 cd_8453_jtag_rgl
+call:buildPatchSection src\4BL\8453 cd_8453_jtag_1888
 
 call:buildPatchSection src\4BL\12905 cd_12905_vfuses
 
@@ -142,6 +144,9 @@ copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_devkit.bin + src\K
 copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devxenon.bin
 copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devzephyr.bin
 copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devfalcon.bin
+
+REM *** this is just a test for my falcon JTAG
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_RGLoader\khv_vfuses_jtag.bin output\17489_RGLoader\patches_falcon.bin
 
 echo Done!
 
@@ -256,6 +261,9 @@ copy output\1888\patches_g2mxenon.bin output\1888\patches_g2mzephyr_y1.bin
 
 REM *** Elpis is basically just a fancy Rhea GPU, so the kernel patch can be the same. Use 7378 loader to avoid Samsung + Rhea hwinit issues
 copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mxenon_ELPIS.bin
+
+REM *** This is a test for falcon JTAGs
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_1888.bin + src\KHV\1888\khv_vfuses_rhea_jtag.bin output\1888\patches_falcon.bin
 
 
 REM *** 1838 is a bit weird with the patches- ordinarily, you'd thing we'd patch the GPU driver like we do for 1888
