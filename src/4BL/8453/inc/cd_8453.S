@@ -22,7 +22,7 @@ MAKEPATCH 0x00000260
 # Jump to a function that adjusts the next BL location to load 5BL from
 # the standard spot in NAND rather than from directly after the JTAG CD
 #============================================================================
-.ifndef use_jtag_5bl 
+.ifdef jtag_5bl_offset 
 MAKEPATCH 0x000003E0
 0:
 	MAKEBRANCHL 0x57a8
@@ -71,7 +71,11 @@ wait_for_character_sent:
 
 loc_57a8:
 	lis %r3, 1
+.ifdef jtag_5bl_offset
 	ori %r3, %r3, jtag_5bl_offset
+.else
+	nop
+.endif
 	blr
 
 loc_57b4:
