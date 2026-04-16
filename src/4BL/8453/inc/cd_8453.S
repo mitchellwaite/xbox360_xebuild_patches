@@ -232,31 +232,6 @@ MAKEPATCH 0x00000E28
 	nop
 9:
 
-#============================================================================
-# TODO: I really don't know why RGL has this patch, it effectively means we'll
-# write 0x00 to the POST bus rather than 0x52 when we branch to 5BL
-#============================================================================
-MAKEPATCH 0x00000E30
-0:
-	li %r4, 0
-9:
-
-# =================================================================================
-# remove unpaired bit from bootloader flags
-# TODO is this even needed when all the hypervisors have flag fixers?
-# =================================================================================
-MAKEPATCH 0x00001024
-0:
-	or %r11, %r11, %r10
-	xori %r11, %r11, 1
-	MAKEBRANCH 0xE40
-9:
-
-MAKEPATCH 0x00000E3C
-0:
-	MAKEBRANCH 0x1024
-9:
-
 # done with patch section
 
 #============================================================================
