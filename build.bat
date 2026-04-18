@@ -30,7 +30,8 @@ call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_sb
 
 call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_sb
-
+call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_jtag
+ 
 call:buildPatchSection src\KHV\17559 khv_17559_vfuses
 call:buildPatchSection src\KHV\17559 hddssauth
 
@@ -245,6 +246,9 @@ copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_devkit_e4.bin + sr
 copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devxenon.bin
 copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devzephyr.bin
 copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devfalcon.bin
+
+REM *** this is just a test for my falcon JTAG
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17700_XDKBuild\khv_vfuses_jtag.bin output\17700_XDKBuild\patches_falcon.bin
 
 echo 17559 FreeBoot...
 

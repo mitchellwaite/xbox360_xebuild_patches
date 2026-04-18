@@ -34,6 +34,8 @@ KMAKEPATCH 0x80061034
 # We've patched out UsbdIsDeviceAuthenticated so we've got some space at
 # 0x800D87A8
 # ============================================================================
+.set ObCreateSymbolicLink, 0x8008DED0
+
 KMAKEPATCH 0x80061128
 0:
    # Patch what was ObCreateSymbolicLink
