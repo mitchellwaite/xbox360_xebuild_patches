@@ -28,6 +28,9 @@ call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jtag
 call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_sb
 
+call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_flash
+call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_sb
+
 call:buildPatchSection src\KHV\17559 khv_17559_vfuses
 call:buildPatchSection src\KHV\17559 hddssauth
 

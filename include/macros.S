@@ -113,6 +113,14 @@
 .endm
 
 #;Arg0 is destination address
+.macro KMAKEBGE DAddress 
+.if(\DAddress)
+	#;Patch structure
+ 	bge (\DAddress-KBASE) - ((.-0b)+PatchAddr)
+.endif
+.endm
+
+#;Arg0 is destination address
 .macro KMAKEBEQCR6 DAddress 
 .if(\DAddress)
 	#;Patch structure
