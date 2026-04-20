@@ -29,20 +29,19 @@ KMAKEPATCH 0x80061034
 
 # ============================================================================
 # 17700 kernel doesn't have any of the normal panic functions so we have
-# to make our own :)
+# to make our own
 #
-# We've patched out UsbdIsDeviceAuthenticated so we've got some space at
-# 0x800D87A8
+# we've got some space at 0x80060ff0
 # ============================================================================
 .set ObCreateSymbolicLink, 0x8008DED0
 
 KMAKEPATCH 0x80061128
 0:
    # Patch what was ObCreateSymbolicLink
-   KMAKEBRANCH 0x800D87A8
+   KMAKEBRANCH 0x80060ff0
 9:
 
-KMAKEPATCH 0x800D87A8
+KMAKEPATCH 0x80060ff0
 0:
    # Call the func we patched ;)
    KMAKEBRANCHL ObCreateSymbolicLink
@@ -56,5 +55,3 @@ KMAKEPATCH 0x800D87A8
    # as SystemRoot
    KMAKEBRANCH 0x80061058
 9:
-
-

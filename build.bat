@@ -239,10 +239,10 @@ copy output\17700_XDKBuild\patches_g2mcorona_flash.bin output\17700_XDKBuild\pat
 
 
 REM *** This is a bit hacky for a devkit image...
-REM *** The "devkit" SD patch looks for XeLL at 0xE4000 because XeBuild can't be consistent in where the start
+REM *** This "devkit" SD patch looks for XeLL at 0xE0000 because XeBuild can't be consistent in where the start
 REM *** of the filesystem in a small block image is. SB patches are ignored pretty much.. just here to make sure
 REM *** the sections in the patch file are correct and xeBuild doesn't freak out (plz open source xebuild)
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_devkit_e4.bin + src\KHV\17700_XDKBuild\khv_vfuses_flash.bin output\17700_XDKBuild\patches_devjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_c80e.bin + src\KHV\17700_XDKBuild\khv_vfuses_flash.bin output\17700_XDKBuild\patches_devjasper.bin
 copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devxenon.bin
 copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devzephyr.bin
 copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devfalcon.bin
