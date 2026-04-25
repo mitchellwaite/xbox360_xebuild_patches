@@ -1,7 +1,6 @@
-# Builds SD patches with VFuse support for small block consoles (and corona) with patches located at 0xE0000 XeLL located at 0xF0000
+# Builds SD patches with VFuse support for small block consoles (16mb and 64mb) and corona with XeLL located directly after the second patch slot
 
 .set vfuses, 1
-.set xell_offset, 0xC80F
 .set patchengine, 1
 
 .include "sd_17489.S"
