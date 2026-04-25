@@ -57,9 +57,7 @@ echo Building 4BL patch files...
 call:buildPatchSection src\4BL\17489 sd_vfuses_bb
 call:buildPatchSection src\4BL\17489 sd_vfuses_sb
 
-call:buildPatchSection src\4BL\12611 sd_vfuses_glitch2m_1838
-call:buildPatchSection src\4BL\12611 sd_vfuses_devgl_1838
-call:buildPatchSection src\4BL\12611 sd_vfuses_devkit_1838
+call:buildPatchSection src\4BL\12611 sd_vfuses_sb
 call:buildPatchSection src\4BL\12611 sd_shadowboot
 
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
@@ -296,63 +294,40 @@ REM *** run in a "low performance" backup mode that's better, but still a bit gl
 REM *** to be useable for anything other than simple demos or looking at the dashboard
 
 REM *** In addition, UNLIKE 17489.... xeBuild puts XeLL in different spots for 16mb DevGL and 16mb glitch2m 1838
-REM *** images. So, that basically means we need 3 total SD patches. and, because XeBuild uses patches_g2m for
-REM *** both DevGL and glitch2m, we need TWO different xeBuild folders. (or i write some asm to find XeLL but eh)
-echo 1838 XDKBuild DevGL...
+REM *** images. So, that means the SD patch needs to calculate the location of XeLL. Luckily, XeBuild always puts
+REM *** the flashfs after the second patch slot so this can be done relatively easily
+echo 1838 XDKBuild...
 
-mkdir output\1838_DEVGL
+mkdir output\1838
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_devgl_1838.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838_DEVGL\patches_g2mxenon.bin
-copy output\1838_DEVGL\patches_g2mxenon.bin output\1838_DEVGL\patches_g2mzephyr.bin
-copy output\1838_DEVGL\patches_g2mxenon.bin output\1838_DEVGL\patches_g2mfalcon.bin
-copy output\1838_DEVGL\patches_g2mxenon.bin output\1838_DEVGL\patches_g2mjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_g2mxenon.bin
+copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mzephyr.bin
+copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mfalcon.bin
+copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mjasper.bin
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_devkit_1838.bin + src\KHV\1838\khv_1838_vfuses_devkit.bin output\1838_DEVGL\patches_devxenon.bin
-copy output\1838_DEVGL\patches_devxenon.bin output\1838_DEVGL\patches_devzephyr.bin
-copy output\1838_DEVGL\patches_devxenon.bin output\1838_DEVGL\patches_devfalcon.bin
-copy output\1838_DEVGL\patches_devxenon.bin output\1838_DEVGL\patches_devjasper.bin
-
-echo Done!
-
-echo 1838 XDKBuild Glitch2m...
-
-mkdir output\1838_G2M
-
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_glitch2m_1838.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838_G2M\patches_g2mxenon.bin
-copy output\1838_G2M\patches_g2mxenon.bin output\1838_G2M\patches_g2mzephyr.bin
-copy output\1838_G2M\patches_g2mxenon.bin output\1838_G2M\patches_g2mfalcon.bin
-copy output\1838_G2M\patches_g2mxenon.bin output\1838_G2M\patches_g2mjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_devkit.bin output\1838\patches_devxenon.bin
+copy output\1838\patches_devxenon.bin output\1838\patches_devzephyr.bin
+copy output\1838\patches_devxenon.bin output\1838\patches_devfalcon.bin
+copy output\1838\patches_devxenon.bin output\1838\patches_devjasper.bin
 
 echo Done!
 
 REM *** ditto for 1839
-echo 1839 XDKBuild DevGL...
+echo 1839 XDKBuild...
 
-mkdir output\1839_DEVGL
+mkdir output\1839
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_devgl_1838.bin + src\KHV\1839\khv_1839_vfuses.bin output\1839_DEVGL\patches_g2mxenon.bin
-copy output\1839_DEVGL\patches_g2mxenon.bin output\1839_DEVGL\patches_g2mzephyr.bin
-copy output\1839_DEVGL\patches_g2mxenon.bin output\1839_DEVGL\patches_g2mfalcon.bin
-copy output\1839_DEVGL\patches_g2mxenon.bin output\1839_DEVGL\patches_g2mjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1839\khv_1839_vfuses.bin output\1839\patches_g2mxenon.bin
+copy output\1839\patches_g2mxenon.bin output\1839\patches_g2mzephyr.bin
+copy output\1839\patches_g2mxenon.bin output\1839\patches_g2mfalcon.bin
+copy output\1839\patches_g2mxenon.bin output\1839\patches_g2mjasper.bin
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_devkit_1838.bin + src\KHV\1839\khv_1839_vfuses_devkit.bin output\1839_DEVGL\patches_devxenon.bin
-copy output\1839_DEVGL\patches_devxenon.bin output\1839_DEVGL\patches_devzephyr.bin
-copy output\1839_DEVGL\patches_devxenon.bin output\1839_DEVGL\patches_devfalcon.bin
-copy output\1839_DEVGL\patches_devxenon.bin output\1839_DEVGL\patches_devjasper.bin
-
-echo Done!
-
-echo 1839 XDKBuild Glitch2m...
-
-mkdir output\1839_G2M
-
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_glitch2m_1838.bin + src\KHV\1839\khv_1839_vfuses.bin output\1839_G2M\patches_g2mxenon.bin
-copy output\1839_G2M\patches_g2mxenon.bin output\1839_G2M\patches_g2mzephyr.bin
-copy output\1839_G2M\patches_g2mxenon.bin output\1839_G2M\patches_g2mfalcon.bin
-copy output\1839_G2M\patches_g2mxenon.bin output\1839_G2M\patches_g2mjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1839\khv_1839_vfuses_devkit.bin output\1839\patches_devxenon.bin
+copy output\1839\patches_devxenon.bin output\1839\patches_devzephyr.bin
+copy output\1839\patches_devxenon.bin output\1839\patches_devfalcon.bin
+copy output\1839\patches_devxenon.bin output\1839\patches_devjasper.bin
 
 echo Done!
-
 
 echo.
 echo SHA256 hashes:

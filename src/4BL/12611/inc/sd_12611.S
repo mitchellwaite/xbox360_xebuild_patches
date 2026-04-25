@@ -204,10 +204,12 @@ load_xell:
    li      %r5, 0x200
    oris    %r5, %r5, 0x8000
    sldi    %r5, %r5, 32
-.ifdef devgl64
-   bl set_bits_for_xell_in_flashfs
-.else
+.ifdef xell_offset
    oris    %r5, %r5, xell_offset  # XeLL loaction in flash changes for full flash fs vs. 16mb
+.else
+   # If this is a small block machine, we can just calculate the location
+   # since it's always right after the secont patch slot
+   bl set_bits_for_xell_in_flashfs
 .endif
    mr      %r5, %r5
    lis     %r6, -0x8000
@@ -396,20 +398,21 @@ loc_51B0:
    mtmsrd  %r7
    rfid
 
-# For armin's hacky 64mb XDKbuild image, xell in flashfs lives
-# a whole 0x4000 later in NAND. This makes us need an additional
-# instruction to set up the value in r5 we want to read from.
-# Branching here so we don't accidentally mess up the offsets
-# elsewhere in the patch set. TODO: can we put the oris/ori
-# in the original spot or will it bump everything too far?
-# In any case. XeLL lives at 0xF4000 in flash on a 64mb
-# devkit image because reasons. Need to handle that separately.
-.ifdef devgl64
+# I really don't know why i didn't think of this earlier. On small block systems,
+# XeBuild starts the flashfs right after the second patch slot. Because we ensure
+# XeLL is always the first file in the flashfs, we can actually calculate where
+# XeLL should be and not have 20 different versions of the SD patch
 set_bits_for_xell_in_flashfs:
-   oris    %r5, %r5, xell_offset_high
-   ori     %r5, %r5, xell_offset_low
+   oris    %r5, %r5, 0xC800  # r5 pointing to memory mapped NAND: 0x80000200 0xC8000000
+
+   lwz     %r4, 0x64(%r5) # r4 contains patch slot offset
+   lwz     %r6, 0x70(%r5) # r6 contains patch slot size
+
+   add     %r5, %r5, %r4 # r5 now pointing to memory mapped NAND (patch slot 0)
+   add     %r5, %r5, %r6
+   add     %r5, %r5, %r6 # r5 now pointing to XeLL (lives right after patch slot 1)
+
    blr
-.endif
 
 9:
 
