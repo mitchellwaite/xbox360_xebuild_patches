@@ -12,17 +12,11 @@ mkdir output
 echo Building kernel patch files...
 
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_sb
-call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_jasperbb
-call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_trinitybb
-call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_coronabb
-call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_devkit
+call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_flash
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_jtag
 
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_sb
-call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jasperbb
-call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_trinitybb
-call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_coronabb
-call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_devkit
+call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jtag
 
 call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_flash
@@ -128,16 +122,19 @@ copy output\17489_RGLoader\patches_g2mjasper.bin output\17489_RGLoader\patches_g
 copy output\17489_RGLoader\patches_g2mjasper.bin output\17489_RGLoader\patches_g2mtrinity.bin
 copy output\17489_RGLoader\patches_g2mjasper.bin output\17489_RGLoader\patches_g2mcorona.bin
 
-REM *** BB consoles all have different patch sets. C'est la vie.
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\17489_RGLoader\khv_vfuses_jasperbb.bin output\17489_RGLoader\patches_g2mjasper_flash.bin
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\17489_RGLoader\khv_vfuses_trinitybb.bin output\17489_RGLoader\patches_g2mtrinity_flash.bin
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_RGLoader\khv_vfuses_coronabb.bin output\17489_RGLoader\patches_g2mcorona_flash.bin
+REM *** BB jasper and trinity are the same patches
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\17489_RGLoader\khv_vfuses_flash.bin output\17489_RGLoader\patches_g2mjasper_flash.bin
+copy /b output\17489_RGLoader\patches_g2mjasper_flash.bin output\17489_RGLoader\patches_g2mtrinity_flash.bin
 
 REM *** To build a 64mb devkit image, it's basically the same patch set as a 16mb console but without the HDD redirection
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_RGLoader\khv_vfuses_devkit.bin output\17489_RGLoader\patches_devjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_RGLoader\khv_vfuses_flash.bin output\17489_RGLoader\patches_devjasper.bin
 copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devxenon.bin
 copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devzephyr.bin
 copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devfalcon.bin
+
+REM *** Oddly enough, because Corona 4GB is the same logical flash layout as 64mb devkits (flashfs directly following the 2nd patch slot)
+REM *** the corona 4gb patch is the same as what i'd use to build a hacky devkit image
+copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_g2mcorona_flash.bin
 
 REM *** this is just a test for my falcon JTAG
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_RGLoader\khv_vfuses_jtag.bin output\17489_RGLoader\patches_falcon.bin
@@ -158,16 +155,19 @@ copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mcorona.bin
 copy output\17489_XDKBuild\patches_g2mjasper.bin output\17489_XDKBuild\patches_g2mwinchester.bin
 
-REM *** BB consoles all have different patch sets. C'est la vie.
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\17489_XDKBuild\khv_vfuses_jasperbb.bin output\17489_XDKBuild\patches_g2mjasper_flash.bin
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\17489_XDKBuild\khv_vfuses_trinitybb.bin output\17489_XDKBuild\patches_g2mtrinity_flash.bin
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_XDKBuild\khv_vfuses_coronabb.bin output\17489_XDKBuild\patches_g2mcorona_flash.bin
+REM *** BB jasper and trinity are the same
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\17489_XDKBuild\khv_vfuses_flash.bin output\17489_XDKBuild\patches_g2mjasper_flash.bin
+copy output\17489_XDKBuild\patches_g2mjasper_flash.bin output\17489_XDKBuild\patches_g2mtrinity_flash.bin
 
 REM *** To build a 64mb devkit image, it's basically the same patch set as a 16mb console but without the HDD redirection
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_XDKBuild\khv_vfuses_devkit.bin output\17489_XDKBuild\patches_devjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_XDKBuild\khv_vfuses_flash.bin output\17489_XDKBuild\patches_devjasper.bin
 copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devxenon.bin
 copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devzephyr.bin
 copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devfalcon.bin
+
+REM *** Oddly enough, because Corona 4GB is the same logical flash layout as 64mb devkits (flashfs directly following the 2nd patch slot)
+REM *** the corona 4gb patch is the same as what i'd use to build a hacky devkit image
+copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_g2mcorona_flash.bin
 
 echo Done!
 

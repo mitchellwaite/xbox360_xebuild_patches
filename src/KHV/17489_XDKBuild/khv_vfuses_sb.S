@@ -2,6 +2,5 @@
 
 .set vfuses, 1
 .set hdd, 1
-.set consoletype_sb, 1
 
 .include "khv_17489.S"

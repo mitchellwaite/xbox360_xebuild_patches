@@ -3,6 +3,11 @@
 #============================================================================
 #   Patches for Hypervisor 21256.18_17489
 #============================================================================
+.set HV_HvpGetFlashBaseAddress, 0x0000068C
+.set HV_HvpFlashCopy, 0x00000484 # XeCryptCopyQwVec(void* dest, void* src, int iter)
+
+.set HV_FlagFixer, 0xB188
+.set FixFusesAddr, 0xB400
 
 #============================================================================
 #  HV Patch Console Seq check
@@ -116,9 +121,6 @@ MAKEPATCH 0x00030C2C
 9:
 
 # VFuse patches for 17489/21256.18
-
-
-.ifdef vfuses
 #============================================================================
 #   Setup Fuse Row Pointer to point at Virtual Fuses
 #   Change Increment and Range Check of Fuse Row Pointer
@@ -220,108 +222,88 @@ MAKEPATCH 0x00030C2C
 #============================================================================
 #   Send Dot Character over Serial as Progress Indicator (ikari)
 #============================================================================
-   MAKEPATCH 0x000018c0
-   .set PrintDotDest, 0x000002D8
+MAKEPATCH 0x000018c0
 0:
-   bla      PrintDot  # patches
+   bla HV_FlagFixer
 9:
 
-#============================================================================
-#   Utility Functions (c0z and ikari)
-#============================================================================
-   MAKEPATCH  0x0000B188
+# ============================================================================
+#	HV Flag Fixer branched from 0x18C0
+# ============================================================================
+MAKEPATCH HV_FlagFixer
+0:
+   mflr %r8
+   lhz %r3, 6(0)
+   li %r4, 0x21
+   andc %r3, %r3, %r4
+   sth %r3, 6(0)
 
-# Vfuses offset in NAND are different for each console type
-# 16mb small block: 0xe0000
-# 64mb small block: 0xe4000
-# Jasper BB: 0x100000
-# Trinity BB: 0xF0000
-# Corona BB: 0xe0000
-
-.ifdef consoletype_jasperbb
-   .set nand_patch_offset, 0x0100000
-.endif
-
-.ifdef consoletype_trinitybb
-   .set nand_patch_offset, 0x00F0000
-.endif
-
-.ifdef consoletype_coronabb
-.set nand_patch_offset, 0x00e0000
-.endif
-
-.ifdef consoletype_sb
-   .set nand_patch_offset, 0x00e0000
-.endif
-
-.ifdef consoletype_devgl64
-   .set nand_patch_offset, 0x00e4000
-.endif
+   # Load the virtual fuses from NAND
+   bla HV_HvpGetFlashBaseAddress
 
 .ifdef consoletype_jtag
-    .set nand_patch_offset, 0x95000
+   # JTAGs use virtual fuses too!
+   # They're always at address 0x95000, don't need to
+   # do any patch slot size/count calculations 
+   oris %r4, %r3, 9
+   ori %r4, %r4, 0x5000
+   nop
+   nop
+.else
+   # 0x64 (patch slot address) 0x70 (patch slot size)
+   # let us calculate the location of the vfuses
+   lwz %r4, 0x64(%r3)
+   lwz %r5, 0x70(%r3)
+
+   # XeBuild puts the virtual fuses at the beginning of
+   # the second patch slot, comment this out if you use the 1st
+   add %r3, %r3, %r4
+   add %r4, %r3, %r5
 .endif
 
-
-   .set HvpGetFlashBaseAddress, 0x0000068C
-   .set HvpFlashCopy, 0x00000484 # XeCryptCopyQwVec(void* dest, void* src, int iter)
-   .set HvpMemCpy, 0x0000A4E0 #  memcpy(void *destination, const void *source, int len)
-   .set PrintDot, PatchAddr
-   .set FixFusesAddr, (PatchAddr + (1f - 0f))
-   .set PrintChar, (PatchAddr + (2f - 0f))
-   #.set HvFlagFixer, (PatchAddr + (3f - 0f))
-#--------------------------------------------------
-# PrintDot
-#--------------------------------------------------
-0:
-   mflr  %r8
-   bla      HvpGetFlashBaseAddress
-   oris  %r4, %r3, nand_patch_offset@h
-   ori      %r4, %r4, nand_patch_offset@l # source
-   
-   lis      %r3, 1
-   subi  %r3, %r3, 0x60
+   lis %r3, 1
    # 0x60 bytes, 0xC 64bit vals to copy
-   li    %r5, 0xC
-   bla      HvpFlashCopy
-   
-   # remove KV signature check
-   lhz     %r3, 0x6(%r0)  # load flag byte into r3
-   li      %r4, 0x21
-   andc    %r3, %r3, %r4 # clear bit
-   sth     %r3, 0x6(%r0)      # store new flag
-   cmpldi   %r21,  0    # do what we patched
+   subi %r3, %r3, 0x60
+   li %r5, 0xc
+   MAKEBRANCHL HV_HvpFlashCopy
 
-   li      %r3, '!'
-   bla     PrintChar
-   li      %r3, '\n'
-   bla     PrintChar
-   mtlr  %r8
-   ba      PrintDotDest
-#--------------------------------------------------
-# FixFusesAddr
-#--------------------------------------------------
-1:
-   lis      %r3, 1
-   subi  %r3, %r3, 0x60
-   blr
-#--------------------------------------------------
-# PrintChar
-#--------------------------------------------------
-2:
-   lis     %r4, 0x8000
-   ori     %r4, %r4, 0x0200
-   rldicr  %r4, %r4, 32, 31
-   oris    %r4, %r4, 0xea00
-   slwi    %r3, %r3, 24
-   stw     %r3, 0x1014(%r4)
+   li %r3, '!'
+   bl PrintChar
+   li %r3, '\n'
+   bl PrintChar
+
+   # Restore the link register
+   mtlr %r8
+
+   # Branch to where we were supposed to go
+   ba 0x2D8
+
+PrintChar:
+   lis %r4, -0x8000
+   ori %r4, %r4, 0x200
+   sldi %r4, %r4, 0x20
+   oris %r4, %r4, 0xea00
+   slwi %r3, %r3, 0x18
+   stw %r3, 0x1014(%r4)
+   sync
+   isync
+
 charwait:
-   lwz     %r3, 0x1018(%r4)
+   lwz %r3, 0x1018(%r4)
    rlwinm. %r3, %r3, 0, 6, 6
-   beq     charwait
+   beq charwait
    blr
 9:
-.endif
+
+# ============================================================================
+# FixFusesAddr
+# ============================================================================
+MAKEPATCH FixFusesAddr
+0:
+   lis %r3, 1
+   addi %r3, %r3, -0x60
+   blr
+9:
 
 .ifdef consoletype_jtag
 # In 17489, we've got some room right after HvxStartupProcessors
