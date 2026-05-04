@@ -62,7 +62,8 @@ KENDTRAMPOLINE 0x14
 ##############################################################################
 # VdInitializeEDRAM - Thanks SK1080!
 #
-# Note: The same patches that spoof the ASIC ID in 1888 do NOT 
+# Note: The same patches that spoof the ASIC ID in 1888 do NOT work at the
+# moment for 1838. Investigation tbd
 ##############################################################################
 .if CON_REV >= JASPER
 .set EDRAMTiming, 0x15 # Zeus; here for shock value
