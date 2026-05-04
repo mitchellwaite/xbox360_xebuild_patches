@@ -36,6 +36,7 @@ call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea_jtag
 
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses_devkit
+call:buildPatchSection src\KHV\1838 khv_1838_vfuses_rhea
 
 call:buildPatchSection src\KHV\1839 khv_1839_vfuses
 call:buildPatchSection src\KHV\1839 khv_1839_vfuses_devkit
@@ -302,8 +303,9 @@ mkdir output\1838
 
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_g2mxenon.bin
 copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mzephyr.bin
-copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mfalcon.bin
 copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mjasper.bin
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_rhea.bin output\1838\patches_g2mfalcon.bin
 
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_devkit.bin output\1838\patches_devxenon.bin
 copy output\1838\patches_devxenon.bin output\1838\patches_devzephyr.bin
