@@ -30,8 +30,6 @@ call:buildPatchSection src\KHV\17559 khv_17559_vfuses
 call:buildPatchSection src\KHV\17559 hddssauth
 
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses
-call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea
-call:buildPatchSection src\KHV\1888 khv_1888_vfuses_zeus
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea_jtag
 
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses
@@ -274,16 +272,16 @@ echo 1888 FreeBoot...
 
 mkdir output\1888
 
-copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_zeus.bin output\1888\patches_g2mjasper.bin
-copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mfalcon.bin
-copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mxenon.bin
-copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mzephyr.bin
+copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mjasper.bin
 
-REM *** Zephyr A with Y1 uses the same GPU and 5772 CB as Xenon. If an elpis has been installed... bascially just a zephyr C
-copy output\1888\patches_g2mxenon.bin output\1888\patches_g2mzephyr_y1.bin
+REM *** Falcon and earlier use 5772 CB, so the patch sets are identical. The kernel patch can handle any flavour of GPU.
+copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mfalcon.bin
+copy output\1888\patches_g2mfalcon.bin output\1888\patches_g2mxenon.bin
+copy output\1888\patches_g2mfalcon.bin output\1888\patches_g2mzephyr.bin
+
 
 REM *** Elpis is basically just a fancy Rhea GPU, so the kernel patch can be the same. Use 7378 loader to avoid Samsung + Rhea hwinit issues
-copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses_rhea.bin output\1888\patches_g2mxenon_ELPIS.bin
+copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mxenon_ELPIS.bin
 
 REM *** This is a test for falcon JTAGs
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_1888.bin + src\KHV\1888\khv_vfuses_rhea_jtag.bin output\1888\patches_falcon.bin

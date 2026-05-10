@@ -650,33 +650,114 @@ KMAKEPATCH XeKeysFreeSpace
 
 .ifdef patch_gpu
 #============================================================================
-# Patch VdpOneTimeDeviceInitialize to spoof the GPU ID to avoid E78
+# Patch VdpOneTimeDeviceInitialize to bypass E78
 #============================================================================
-KMAKEPATCH 0x800DE5FC
+KMAKEPATCH 0x800DE6A8
 0:
-    li %r11, 0x11 #Prod GPU
+    b +0x10
 9:
 
-# Another option to skip the GPU version check is to patch the bge before the call to VdDisplayFatalError
-# KMAKEPATCH 0x800DE6A8
-# 0:
-#     b +0x10
-# 9:
+#============================================================================
+# Patch VdGetGraphicsAsicID to always return 0x11
+#============================================================================
+KMAKEPATCH 0x800919EC
+0:
+   li %r3, 0x11
+9:
 
 #============================================================================
-# Patch VdInitializeEdram to set edram timing, otherwise graphics will look screwy
+# Patch VdInitializeEdram to jump to a function that sets edram timing,
+# otherwise graphics will look screwy
 #============================================================================
 KMAKEPATCH 0x80098688
 0:
-.ifdef patch_gpu_zeus
-   li %r10, 0x15 # Zeus/Kronos timing
-.endif
-
-.ifdef patch_gpu_rhea
-   li %r10, 0x1E # Rhea timing
-.endif
+   KMAKEBRANCH 0x800BC13C
 9:
 
+#============================================================================
+# We've got some more space inside XeKeysConsoleSignatureVerification, use it
+# for the EDRAM timing patch
+#============================================================================
+KMAKEPATCH 0x800BC13C
+0:
+   # Load the actual ASIC ID from RAM
+   lis %r4, -0x7FF1
+   lwz %r3, 0x41AC(%r4)
+
+   # Check for Y1 (ASIC ID 0x11)
+   cmplwi cr6, %r3, 0x11
+   bne cr6, not_a_y1
+
+   # Y1 edram timing = 0x1A
+   li %r10, 0x1A
+   KMAKEBRANCH 0x8009868C
+
+not_a_y1:
+   # We're running something *other* than a Y1.
+   # The upper 16 bits will contain the Xenos ID
+   srwi %r3, %r3, 16
+
+   # Check for Rhea (Xenos ID 0x5821)
+   cmplwi cr6, %r3, 0x5821
+   bne cr6, check_gunga
+
+   # It's a rhea GPU, set the edram timing and jump back
+   li %r10, 0x1E
+   KMAKEBRANCH 0x8009868C
+
+check_gunga:
+   # Check for Gunga (Xenos ID 0x5831)
+   cmplwi cr6, %r3, 0x5831
+
+   # If it's not a Rhea, and not a Gunga, we're kind of fucked.
+   # It's probably a slim which is unsupported so throw an E78
+   bne cr6, throw_e78
+
+   # Zeus/Kronos timing
+   li %r10, 0x15
+   KMAKEBRANCH 0x8009868C
+
+throw_e78:
+   # Jump back to the existing code that throws E78
+   # at 0x800DE6AC which is too far for a normal branch
+   
+   lis %r10, 0x800D
+   ori %r10, %r10, 0xE6AC
+   mtctr %r10
+   bctr
+9:
+
+#============================================================================
+# Patch the 1888 kernel to store the entire ASIC id in the bytes we've got,
+# similar to what later kernels that actually support Rhea/Gunga do.
+# This is also in some leftover bytes from XeKeysConsoleSignatureVerification
+#============================================================================
+KMAKEPATCH 0x800DE60C
+0:
+   KMAKEBRANCH 0x800BC1C0
+9:
+
+KMAKEPATCH 0x800BC1C0
+0:
+   addi %r9, %r1, 0x52
+   lhbrx %r10, 0, %r9
+   clrlwi %r10, %r10, 16
+
+   # When later kernels detect a Y1, they'll skip ORing the Xenos ID
+   cmplwi cr6, %r10, 0x5811
+   beq cr6, its_a_y1
+
+   slwi %r10, %r10, 16
+   or %r11, %r10, %r11
+
+its_a_y1:
+   stw %r11, 0x41AC(%r28)
+   KMAKEBRANCH 0x800DE610
+9:
+
+#============================================================================
+# Patch VdInitializeEdram... i don't remember what this does exactly LOL
+#============================================================================
 KMAKEPATCH 0x800986D0
 0:
    li %r4, 0x31
