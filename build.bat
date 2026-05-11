@@ -34,7 +34,6 @@ call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea_jtag
 
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses_devkit
-call:buildPatchSection src\KHV\1838 khv_1838_vfuses_rhea
 
 call:buildPatchSection src\KHV\1839 khv_1839_vfuses
 call:buildPatchSection src\KHV\1839 khv_1839_vfuses_devkit
@@ -287,10 +286,10 @@ REM *** This is a test for falcon JTAGs
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_1888.bin + src\KHV\1888\khv_vfuses_rhea_jtag.bin output\1888\patches_falcon.bin
 
 
-REM *** 1838 is a bit weird with the patches- ordinarily, you'd thing we'd patch the GPU driver like we do for 1888
-REM *** However, the GPU is LESS stable with the ASIC ID and EDRAM patches. So, we'll leave it alone and let 1838
-REM *** run in a "low performance" backup mode that's better, but still a bit glitchy. You'll need a Y1 for 1838
-REM *** to be useable for anything other than simple demos or looking at the dashboard
+REM *** 1838 is a bit weird with the patches- ordinarily, you'd think we'd patch the GPU driver like we do for 1888
+REM *** However, the GPU is LESS stable with the ASIC ID and EDRAM patches directly copied over. We need to make
+REM *** some other changes in the 1838 video driver to make it stable, and even then, sometimes Rhea won't train
+REM *** the edram properly. It's usually fine after a reboot, though. Thanks to Scar (kavkazsila) on Discord for all the help! 
 
 REM *** In addition, UNLIKE 17489.... xeBuild puts XeLL in different spots for 16mb DevGL and 16mb glitch2m 1838
 REM *** images. So, that means the SD patch needs to calculate the location of XeLL. Luckily, XeBuild always puts
@@ -302,8 +301,7 @@ mkdir output\1838
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses.bin output\1838\patches_g2mxenon.bin
 copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mzephyr.bin
 copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mjasper.bin
-
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_rhea.bin output\1838\patches_g2mfalcon.bin
+copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mfalcon.bin
 
 copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_devkit.bin output\1838\patches_devxenon.bin
 copy output\1838\patches_devxenon.bin output\1838\patches_devzephyr.bin

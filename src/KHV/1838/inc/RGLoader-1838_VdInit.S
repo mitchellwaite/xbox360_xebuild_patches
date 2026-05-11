@@ -1,4 +1,4 @@
-# XeDK on Post-Y1 PRE-ALPHA
+# XeDK on Post-Y1 PRE-ALPHA thanks to Scar (kavkazsila)
 # PROGRESS REPORT:
 #  Rhea will fail to train edram sometimes, but yolo restart the console and it's fine
 
