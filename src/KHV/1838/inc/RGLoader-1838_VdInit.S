@@ -1,13 +1,11 @@
 # XeDK on Post-Y1 PRE-ALPHA
 # PROGRESS REPORT:
-#   Non-ATI GPUs and Y1 still mog the shit out of Rhea on Dolphin (1337 vs 230 FPS)
+#  Rhea will fail to train edram sometimes, but yolo restart the console and it's fine
 
 .set SHIVA, 0x10; .set XENON, 0x5811; # Zephyr.0 = Xenon Vittu?; Zephyr.1 = Xenon v3
 .set RHEA, 0x5821; # Zephyr.2 = 58210001(?); Falcon/Opus/Elpiss = 58210002
 .set ZEUS, 0x5831; # https://www.youtube.com/watch?v=LvSOOrAPk-U
 .set VALHALLA, 0x5841; .set HANALESS, 0x5851
-
-.set CON_REV, RHEA
 
 # ASIC IDs - Pull from 17489 XDK @ 801E6FBC with a peek-poker
 # Current bench systems
@@ -36,16 +34,6 @@
 .set KBouncyCastleAbyss, KBouncyCastleAbyss + ((\SizeOfTrampoline) * 4)
 .endm
 
-# If you're in for the fun
-.if CON_REV >= VALHALLA
-.include "VdValhalla.S"
-.endif
-
-# Nothing for you! Come back one year
-#.if CON_REV == HANALESS
-#.include "VdHANAless.S"
-#.endif
-
 ##############################################################################
 # VdInitializeEDRAM - Thanks SK1080!
 #
@@ -53,24 +41,56 @@
 # Only the major version of the GPU is used, ie: Rhea = 2; Zeus = 3
 # No table was made prior to this, fuckups were made along the way 
 ##############################################################################
-#.set EDRAMTiming, 0x1A # default
-.if CON_REV >= ZEUS
-.set EDRAMTiming, 0x15 # Zeus
-.else
-.set EDRAMTiming, 0x1E # Rhea
-.endif
 .set InitEDRAMRegs, 0x800AE9A4
-
-.if CON_REV < VALHALLA
-KMAKEPATCH InitEDRAMRegs
+.set VdDisplayFatalError, 0x800A8DF8
+KMAKETRAMPOLINE InitEDRAMRegs
 0:
-    li        %r10, EDRAMTiming
-9:
-.else
-KMAKEHOOK InitEDRAMRegs InitEDRAMRegs + 0xC
-.endif # timing
+   # Load the actual ASIC ID from RAM
+   lis %r4, -0x7FEF
+   lwz %r3, 0x33A0(%r4)
 
-.if CON_REV != HANALESS # Y2.5 and/or initial Rhea do not use this, this is gated by an IF (ASIC >= 58210002); check 
+   # Check for Y1 (ASIC ID 0x11)
+   cmplwi cr6, %r3, 0x11
+   bne cr6, not_a_y1
+
+   # Y1 edram timing = 0x1A
+   li %r10, 0x1A
+   KMAKEBRANCH InitEDRAMRegs + 4
+
+not_a_y1:
+   # We're running something *other* than a Y1.
+   # The upper 16 bits will contain the Xenos ID
+   srwi %r3, %r3, 16
+
+   # Check for Rhea (Xenos ID 0x5821)
+   cmplwi cr6, %r3, 0x5821
+   bne cr6, check_gunga
+
+   # It's a rhea GPU, set the edram timing and jump back
+   li %r10, 0x1E
+   KMAKEBRANCH InitEDRAMRegs + 4
+
+check_gunga:
+   # Check for Gunga (Xenos ID 0x5831)
+   cmplwi cr6, %r3, 0x5831
+
+   # If it's not a Rhea, and not a Gunga, we're kind of fucked.
+   # It's probably a slim which is unsupported (for now) so throw an E78
+   bne cr6, throw_e78
+
+   # Zeus/Kronos timing
+   li %r10, 0x15
+   KMAKEBRANCH InitEDRAMRegs + 4
+
+throw_e78:
+   # Call VdDisplayFatalError at 0x800A8DF8 to throw an E78 (unsupported GPU) error
+   lis %r3, 1
+   ori %r3, %r3, 0x244E
+   KMAKEBRANCHL VdDisplayFatalError
+9:
+KENDTRAMPOLINE 0x12
+
+# .if CON_REV != HANALESS # Y2.5 and/or initial Rhea do not use this, this is gated by an IF (ASIC >= 58210002); check 
 KMAKEPATCH 0x800AE9EC
 0:
     li        %r4, 0x31
@@ -79,12 +99,6 @@ KMAKEPATCH 0x800AE9EC
 KMAKEPATCH 0x800AEA3C
 0:
     li        %r4, 0x31
-9:
-.endif # reg 4001h
-
-KMAKEPATCH 0x800AEA70
-0:
-    li        %r6, 0x11
 9:
 
 ###################################################################
