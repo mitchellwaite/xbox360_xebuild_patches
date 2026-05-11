@@ -201,10 +201,11 @@ old_macdonald:
     # and on this farm he had some PPC assembly...
     eieio
 
+all_done_epilogue:
+
     # do what we patched
     addi      %r1, %r1, 0x170
 
-all_done_epilogue:    
     KMAKEBRANCH VdOneTimeDeviceInitializeEpilogue + 4
 9:
 KENDTRAMPOLINE 0x16
