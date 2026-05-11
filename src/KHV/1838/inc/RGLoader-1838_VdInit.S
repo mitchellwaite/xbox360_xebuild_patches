@@ -91,36 +91,55 @@ KMAKEPATCH 0x800AEA70
 # VdEnableDisableClockGating
 ###################################################################
 .set VdEnableDisableClockGating, 0x800A9D78
-
-#.set ClockGatingBitset0, 0x84003300 # Shiva
-#.set ClockGatingBitset0, 0x04000300 # C1; default
-.set ClockGatingBitset1, 0x180002
-
-.if CON_REV == ZEUS
-.set ClockGatingBitset0, 0x947FF386 # Zeus
-.set ClockGatingBitset1, 0x3FC7C2
-.elseif CON_REV >= RHEA
-.set ClockGatingBitset0, 0x4400380 # Rhea
-.endif
-
 KMAKEPATCH VdEnableDisableClockGating
 0:
     lis       %r10, VdIO
-.if 1 #CON_REV != ZEUS
-    lis       %r11, ClockGatingBitset0@h
-    ori       %r11, %r11, ClockGatingBitset0@l
-.else
+
+    # Load the actual ASIC ID from RAM
+    lis %r4, -0x7FEF
+    lwz %r3, 0x33A0(%r4)
+
+    # Check for Y1, we really don't need any of this since Y1 is officially supported
+    cmplwi cr6, %r3, 0x11
+    bne cr6, rhea_clock
+
+    # Y1 clock gating bitset = 0x04000300
+    lis %r11, 0x400
+    ori %r11, %r11, 0x300
+    b store_bitset_0
+
+rhea_clock:
+    # If it's not Y1, all we really care about is the upper 16 bits e.g. 0x5821, 0x5831, etc.
+    srwi %r3, %r3, 16
+
+    # Rhea clock gating bitset = 0x04400380
     lis       %r11, 0x440
-    ori       %r11, %r11, 0x380 # 0x4400380
+    ori       %r11, %r11, 0x0380
+
+    cmplwi cr6, %r3, 0x5821
+    beq cr6, store_bitset_0 # zeus clock gating config uses the same bit set as rhea with stuff on top
+
+zeus_clock:
     oris      %r11, %r11, 0x903F
-    ori       %r11, %r11, 0xF006 # Zeus = 0x947FF386
-.endif
+    ori       %r11, %r11, 0xF006 # Zeus = 0x947FF386, 
+
+store_bitset_0:
     stw       %r11, 0x204(%r10)
     eieio
 
-    lis       %r11, ClockGatingBitset1@h
-    ori       %r11, %r11, ClockGatingBitset1@l
+    # Default "bitset 1" = 0x180002
+    lis       %r11, 0x18
+    ori       %r11, %r11, 0x2
 
+    # If we're rhea or lesser, we're done
+    cmplwi cr6, %r3, 0x5831
+    blt store_bitset_1
+
+    # Zeus bitset 1 = 0x3FC7C2
+    lis %r11, 0x3F
+    ori %r11, %r11, 0xC7C2
+
+store_bitset_1:
     stw       %r11, 0x208(%r10)
     eieio
     blr
