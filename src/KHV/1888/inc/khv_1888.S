@@ -678,6 +678,7 @@ KMAKEPATCH 0x80098688
 # We've got some more space inside XeKeysConsoleSignatureVerification, use it
 # for the EDRAM timing patch
 #============================================================================
+.set VdDisplayFatalError, 0x80092030
 KMAKEPATCH 0x800BC13C
 0:
    # Load the actual ASIC ID from RAM
@@ -718,13 +719,9 @@ check_gunga:
    KMAKEBRANCH 0x8009868C
 
 throw_e78:
-   # Jump back to the existing code that throws E78
-   # at 0x800DE6AC which is too far for a normal branch
-   
-   lis %r10, 0x800D
-   ori %r10, %r10, 0xE6AC
-   mtctr %r10
-   bctr
+   lis %r3, 1
+   ori %r3, %r3, 0x244E
+   KMAKEBRANCHL VdDisplayFatalError
 9:
 
 #============================================================================
