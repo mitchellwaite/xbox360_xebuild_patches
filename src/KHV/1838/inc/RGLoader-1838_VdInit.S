@@ -19,20 +19,6 @@
 .set VdpGraphicsAsicID, 0x801133A0
 .set VdIO, 0x7FC8 # 0x7FC80000
 
-.set KSaveGPRLR, 0x800BDDE0
-.set KRestoreGPRLR, 0x800BDE30
-
-# r14 - r31
-.macro KSaveRegsToSP Register
-    .set SaveRegRef, KSaveGPRLR + (((\Register) - 14) * 4)
-    KMAKEBRANCHL SaveRegRef
-.endm
-
-.macro KRestoreRegsFromSP Register
-    .set RestoreRegRef, KRestoreGPRLR + (((\Register) - 14) * 4)
-    KMAKEBRANCH RestoreRegRef
-.endm
-
 #.set KBouncyCastleAbyss, 0x8010A180
 .set KBouncyCastleAbyss, 0x8010A220
 
@@ -96,165 +82,10 @@ KMAKEPATCH 0x800AEA3C
 9:
 .endif # reg 4001h
 
-###################################################################
-# HSIO Training on Rhea
-###################################################################
-.set SBI_daughter_write_reg32, 0x800AD478 # (void*, u32, u32)
-.set SBI_daughter_read_modify_write_reg32, 0x800AD7B0 # (void*, u32, u32, u32, u32)
-
-.set ENABLE_HSIO_HACK, 0
-.set ENABLE_HSIO_HACK0, 0
-.set ENABLE_HSIO_HACK1, 0
-.set ENABLE_HSIO_HACK2, 0
-.set ENABLE_HSIO_HACK3, 0 # crashes frequently + introduces additional artifacting
-.set ENABLE_HSIO_HACK4, 0
-
 KMAKEPATCH 0x800AEA70
 0:
     li        %r6, 0x11
 9:
-
-.if ENABLE_HSIO_HACK
-.if ENABLE_HSIO_HACK0
-KMAKETRAMPOLINE 0x800ADF28
-0:
-    lwz       %r11, 0x3C54(%r29)
-.if 1
-    rlwinm    %r11, %r11, 0, 23, 21
-    stw       %r11, 0x3C54(%r29)
-    eieio
-
-    lwz       %r11, 0x3C54(%r29)
-    rlwinm    %r11, %r11, 0, 22, 20
-.else
-    ori       %r11, %r11, 0x200
-    stw       %r11, 0x3C54(%r29)
-    eieio
-
-    lwz       %r11, 0x3C54(%r29)
-    ori       %r11, %r11, 0x400
-.endif
-    stw       %r11, 0x3C54(%r29)
-    eieio
-
-    mr        %r11, %r30
-    KMAKEBRANCH 0x800ADF2C
-9:
-KENDTRAMPOLINE 0x10
-
-.if 1 # UNSTABLE
-.macro SetItr KAddr
-KMAKEPATCH \KAddr
-0:
-    cmplwi    cr6, %r10, 0x14
-9:
-.endm
-
-KMAKEPATCH 0x800ADF3C
-0:
-    cmplwi    cr6, %r11, 0x14
-9:
-
-KMAKEPATCH 0x800AE8A8
-0:
-    cmplwi    cr6, %r19, 0x14
-9:
-
-KMAKEPATCH 0x800AE978
-0:
-    cmplwi    cr6, %r30, 0x14
-9:
-
-SetItr 0x800AD554 # SBI_daughter_read_reg32
-SetItr 0x800AD580
-SetItr 0x800AD5AC
-SetItr 0x800AD5D8
-SetItr 0x800AD498 # SBI_daughter_write_reg32
-SetItr 0x800AD4C4
-SetItr 0x800AD4F4
-SetItr 0x800AD520
-.endif # UNSTABLE
-.endif # ENABLE_HSIO_HACK0
-
-.if ENABLE_HSIO_HACK1
-KMAKEHOOK 0x800ADFE8 0x800AE07C
-.if 0
-KMAKEPATCH 0x800AE090
-0:
-    cmplwi    cr6, %r10, 0x14
-9:
-.endif
-.endif # ENABLE_HSIO_HACK1
-
-.if ENABLE_HSIO_HACK2
-KMAKEPATCH 0x800AD94C
-0:
-    li        %r4, 0x5002
-    mr        %r3, %r30
-    
-    slwi      %r11, %r7, 2
-    or        %r11, %r11, %r7
-    slwi      %r11, %r7, 2
-    or        %r11, %r11, %r7
-    slwi      %r11, %r7, 2
-    or        %r11, %r11, %r7
-    slwi      %r11, %r7, 2
-    or        %r11, %r11, %r7
-    slwi      %r11, %r7, 2
-    or        %r11, %r11, %r7
-    slwi      %r11, %r7, 2
-    or        %r11, %r11, %r7
-    slwi      %r11, %r7, 2
-    or        %r11, %r11, %r7
-    slwi      %r11, %r7, 2
-    or        %r5, %r11, %r7
-    stw       %r5, 0x50(%r1)
-    KMAKEBRANCHL SBI_daughter_write_reg32
-    KMAKEBRANCH 0x800ADA24
-9:
-.endif # ENABLE_HSIO_HACK2
-
-.if ENABLE_HSIO_HACK3
-.if 0 # UNSTABLE
-KMAKETRAMPOLINE 0x800AE2B4
-0:  
-    addi      %r10, %r1, 0x230 # 1F0h = C1; 230h = Rhea
-
-    mr        %r5, %r30
-    mr        %r28, %r30
-    addi      %r27, %r1, 0x60
-
-RegReadLoop:
-    lwz       %r11, 0(%r27)
-    addi      %r27, %r27, 4
-    slwi      %r11, %r11, 2
-    lwzx      %r11, %r11, %r10
-    clrlwi    %r11, %r11, 30
-    slw       %r11, %r11, %r28
-    addi      %r28, %r28, 2
-    or        %r5, %r11, %r5
-    cmpwi     cr6, %r28, 0x12
-    blt       cr6, RegReadLoop
-
-    li        %r4, 0x5002
-    mr        %r3, %r28
-    KMAKEBRANCHL SBI_daughter_write_reg32
-    KMAKEBRANCH 0x800AE2F4
-9:
-KENDTRAMPOLINE 0xD
-.else
-KMAKEPATCH 0x800AE2C0
-0:
-    #addi      %r10, %r1, 0x1F0 # C1
-    addi      %r10, %r1, 0x230 # post-Rhea
-
-    #addi      %r9, %r1, 0x2D0 # C1 - 9199
-    #addi      %r9, %r1, 0x310 # post-Rhea - 9199
-9:
-.endif # UNSTABLE
-.endif # ENABLE_HSIO_HACK3
-
-.endif # ENABLE_HSIO_HACK
 
 ###################################################################
 # VdEnableDisableClockGating
@@ -262,7 +93,7 @@ KMAKEPATCH 0x800AE2C0
 .set VdEnableDisableClockGating, 0x800A9D78
 
 #.set ClockGatingBitset0, 0x84003300 # Shiva
-#.set ClockGatingBitset0, 0x4000300 # C1; default
+#.set ClockGatingBitset0, 0x04000300 # C1; default
 .set ClockGatingBitset1, 0x180002
 
 .if CON_REV == ZEUS
@@ -301,27 +132,77 @@ KMAKEPATCH VdEnableDisableClockGating
 .set VdOneTimeDeviceInitializeEpilogue, 0x800FE02C
 KMAKETRAMPOLINE VdOneTimeDeviceInitializeEpilogue
 0:
+    # Load the actual ASIC ID from RAM
+    lis %r4, -0x7FEF
+    lwz %r3, 0x33A0(%r4)
+
+    # Check for Y1, we really don't need any of this since Y1 is officially supported
+    cmplwi cr6, %r3, 0x11
+    beq cr6, all_done_epilogue
+
+    # If it's not Y1, all we really care about is the upper 16 bits e.g. 0x5821, 0x5831, etc.
+    srwi %r3, %r3, 16
+
     lwz       %r9, 0x4F0(%r31) # %r31 = VdIO
-.if CON_REV >= ZEUS
+
+    cmplwi cr6, %r3, 0x5831
+    blt cr6, its_a_rhea
+
+    # We're running a graphics chip thats zeus or later
     lis       %r10, 0x408
     lis       %r11, -0x710 # 0xF8F00000
     ori       %r10, %r10, 0x1100 # 0x4081100
-.else
+    b old_macdonald
+
+its_a_rhea:
     lis       %r10, 4
     lis       %r11, -0x10 # 0xFFF00000
     ori       %r10, %r10, 0x100 # 0x40100
-.endif 
+
+old_macdonald:
     ori       %r11, %r11, 0xFFFF
     and       %r11, %r11, %r9
     or        %r11, %r11, %r10
     stw       %r11, 0x4F0(%r31)
+
+    # and on this farm he had some PPC assembly...
     eieio
 
+    # do what we patched
     addi      %r1, %r1, 0x170
+
+all_done_epilogue:    
     KMAKEBRANCH VdOneTimeDeviceInitializeEpilogue + 4
 9:
-KENDTRAMPOLINE 0x14
+KENDTRAMPOLINE 0x16
 
+##############################################################################
+# VdOneTimeDeviceInitialize
+##############################################################################
+.set VdOneTimeDeviceInitializeSetAsicId, 0x800FDF50
+KMAKETRAMPOLINE VdOneTimeDeviceInitializeSetAsicId
+0:
+   addi %r6, %r1, 0x52
+   lhbrx %r5, 0, %r6
+   clrlwi %r5, %r5, 16
+
+   # When later kernels detect a Y1, they'll skip ORing the Xenos ID
+   cmplwi cr6, %r5, 0x5811
+   beq cr6, its_a_y1
+
+   slwi %r5, %r5, 16
+   or %r11, %r5, %r11
+
+its_a_y1:
+   stw %r11, 0x33A0(%r10)
+   KMAKEBRANCH VdOneTimeDeviceInitializeSetAsicId + 4
+9:
+KENDTRAMPOLINE 0x10
+
+##############################################################################
+# VdGetGraphicsAsicID
+# Return 0x11 (Y1 GPU)
+##############################################################################
 KMAKEPATCH 0x800A86DC
 0:
     li %r3, 0x11
