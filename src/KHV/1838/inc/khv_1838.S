@@ -17,6 +17,9 @@
 # features are enabled.
 .set HV_FlagFixer, 0xFA00
 .set FixFusesAddr, 0xFAD4
+.set HV_PP_Syscall0, 0xFB00
+
+.set HV_setmemprot, 0x15F0
 
 #============================================================================
 #   Patches for Hypervisor 1838.0
@@ -240,6 +243,92 @@ MAKEPATCH FixFusesAddr
    addi %r3, %r3, -0x60
    blr
 9:
+
+# ============================================================================
+# Syscall 0 Backdoor (FreeBoot, RGL, etc.)
+# ============================================================================
+#;// HvxExecute  Params( 0x72627472, 4, (QWORD)srcAddr, (QWORD)destAddr, (QWORD) lenInBytes)  will jump to destAddr after memcpy
+#;// MemCpy      Params( 0x72627472, 5, (QWORD)srcAddr, (QWORD)destAddr, (QWORD) lenInBytes)
+MAKEPATCH HV_PP_Syscall0
+0:
+   lis %r11, 0x7262                  # Freeboot syscall key - 0x72627472 "rbtr" 1st half
+   ori %r11, %r11, 0x7472            # 2nd half
+
+   cmplw cr6, %r3, %r11             # Check for the magic key 0x72627472
+   beq cr6, checkOpType             # Branch to checkOpType if matches - 0xb578
+   ba HV_HvxGetVersions             # If not, branch back to the real HvxGetVersions
+
+checkOpType:
+   cmplwi cr6, %r4, 4                # Check for 4 aka hvxExecute
+   bgt cr6, doMemCpy                # If it's greter than 4 it must be MemCpy         
+   beq cr6, hvxExecuteCode          # If it matches then it's hvxExecute
+   li %r5, HV_setmemprot             # Memory protections function address added in an earlier patch
+   lis %r6, 0x3880                   # Sets r6 to 0x38800000 - Remains like this if protections are to be ENABLED
+   cmplwi cr6, %r4, 2                # Check for 2 aka set mem protections DISABLED     
+   bne cr6, checkForMemProtectOn    # If not, branch to check for mem protections ENABLED - 0xb59c
+   ori %r6, %r6, 7                    # Updates r6 to 0x38800007 - Indicating protections are to be DISABLED
+   b setMemProtections              # Branch to set memory protections setup 
+
+checkForMemProtectOn:   
+   cmplwi cr6, %r4, 3                # Check for 3 aka set mem protections ENABLED
+   bne cr6, returnOne               # If not, branch to returnOne to exit - 0xb5bc
+
+setMemProtections:
+   li %r0, 0
+   stw %r6, 0(%r5)                    # Sets the start of the set mem function based on what was set in r6 earlier - ENABLED = 0x38800000 (li r4, 0) || DISABLED = 0x38800007 (li r4, 7)
+   dcbst 0, %r5
+   icbi 0, %r5
+   sync 0
+   isync
+
+returnOne:
+   li %r3, 1
+   blr
+
+hvxExecuteCode:
+   mflr %r12
+   std %r12, -8(%r1)
+   stdu %r1, -0x10(%r1)
+   mtlr %r5
+   mtctr %r7
+
+cpyLoop:
+   lwz %r4, 0(%r6)
+   stw %r4, 0(%r5)
+   dcbst 0, %r5
+   icbi 0, %r5
+   sync 0
+   isync
+   addi %r5, %r5, 4
+   addi %r6, %r6, 4
+   bdnz cpyLoop
+   blr
+   addi %r1, %r1, 0x10
+   ld %r12, -8(%r1)
+   mtlr %r12
+   blr
+
+doMemCpy:
+   cmplwi cr6, %r4, 5
+   bne cr6, returnTwo   # Branch to returnTwo
+   mr %r3, %r6
+   mr %r4, %r5
+   mr %r5, %r7
+   ba HV_memcpy         # Branch to the HV MemCpy function
+
+returnTwo:
+   li %r3, 2
+   blr
+9:
+
+# ============================================================================
+# Set the address of the syscall 0 backdoor in the syscall table
+# ============================================================================
+MAKEPATCH Syscall_Table
+0:
+   .long HV_PP_Syscall0
+9:
+
 
 # ============================================================================
 #	HvxKeysRsaPrvCrypt - Allow access to all XeKeys properties
