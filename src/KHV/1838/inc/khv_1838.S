@@ -19,7 +19,7 @@
 .set FixFusesAddr, 0xFAD4
 .set HV_PP_Syscall0, 0xFB00
 
-.set HV_setmemprot, 0x15F0
+.set HV_setmemprot, 0x15D4
 
 #============================================================================
 #   Patches for Hypervisor 1838.0
@@ -329,6 +329,33 @@ MAKEPATCH Syscall_Table
    .long HV_PP_Syscall0
 9:
 
+# ============================================================================
+#
+# Memory protection toggle for 1838 kernel (default ON)
+#
+#	The li %r4, 7 in this is modified by the syscall0 backdoor 
+#	to toggle the memory protection state.
+#	ENABLED = 0x38800000 (li r4, 0) || DISABLED = 0x38800007 (li r4, 7)
+# 
+#  We'll leave it enabled by default because there's no DashLaunch for 1838
+# ============================================================================
+MAKEPATCH 0x00001134
+0:
+	ba  HV_setmemprot
+9:
+
+MAKEPATCH HV_setmemprot
+0:
+	li  %r4, 0
+	andc %r1, %r1, %r4
+	mtspr 0x3b5, %r1
+	ba 0x1138
+9:
+
+MAKEPATCH 0x0000230C
+0:
+	ori       %r4, %r4, 0x1B0
+9:
 
 # ============================================================================
 #	HvxKeysRsaPrvCrypt - Allow access to all XeKeys properties
