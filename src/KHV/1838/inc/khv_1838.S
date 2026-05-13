@@ -442,3 +442,21 @@ KMAKEPATCH 0x800C1AE0
    blr
 9:
 
+#=============================================================================
+# usbdsec patch
+#
+# Fun fact, 1838 does not have a UsbdIsDeviceAuthenticated function
+#=============================================================================
+.set WgcAddDevice_bne, 0x800D91DC
+.set WgcAddDevice_BranchLocation, 0x4
+.set WgcBindToUserNop, 0x800D8668
+
+KMAKEPATCH WgcAddDevice_bne
+0:
+   b WgcAddDevice_BranchLocation
+9:
+
+KMAKEPATCH WgcBindToUserNop
+0:
+   nop
+9:
