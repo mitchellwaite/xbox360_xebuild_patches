@@ -19,6 +19,9 @@ call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_sb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jtag
 
+call:buildPatchSection src\KHV\15574_XDKBuild khv_vfuses_flash
+call:buildPatchSection src\KHV\15574_XDKBuild khv_vfuses_sb
+
 call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\15513_XDKBuild khv_vfuses_sb
 
@@ -168,6 +171,37 @@ REM *** the corona 4gb patch is the same as what i'd use to build a hacky devkit
 copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_g2mcorona_flash.bin
 
 echo Done!
+
+echo 15574 XDKBuild...
+
+mkdir output\15574_XDKBuild
+
+REM *** For 15574, the patch sets for 16mb machines are all identical as they use the same loaders and kernel. XeLL ends up at 0xE0000
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15574_XDKBuild\khv_vfuses_sb.bin output\15574_XDKBuild\patches_g2mjasper.bin
+copy output\15574_XDKBuild\patches_g2mjasper.bin output\15574_XDKBuild\patches_g2mxenon.bin
+copy output\15574_XDKBuild\patches_g2mjasper.bin output\15574_XDKBuild\patches_g2mxenon_ELPIS.bin
+copy output\15574_XDKBuild\patches_g2mjasper.bin output\15574_XDKBuild\patches_g2mzephyr.bin
+copy output\15574_XDKBuild\patches_g2mjasper.bin output\15574_XDKBuild\patches_g2mfalcon.bin
+copy output\15574_XDKBuild\patches_g2mjasper.bin output\15574_XDKBuild\patches_g2mtrinity.bin
+copy output\15574_XDKBuild\patches_g2mjasper.bin output\15574_XDKBuild\patches_g2mcorona.bin
+copy output\15574_XDKBuild\patches_g2mjasper.bin output\15574_XDKBuild\patches_g2mwinchester.bin
+
+REM TODO: we're going to assume for now that all the BB machines are the same, but the SD patch might need to be different
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\15574_XDKBuild\khv_vfuses_flash.bin output\15574_XDKBuild\patches_g2mjasper_flash.bin
+copy output\15574_XDKBuild\patches_g2mjasper_flash.bin output\15574_XDKBuild\patches_g2mtrinity_flash.bin
+
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15574_XDKBuild\khv_vfuses_flash.bin output\15574_XDKBuild\patches_g2mcorona_flash.bin
+copy output\15574_XDKBuild\patches_g2mcorona_flash.bin output\15574_XDKBuild\patches_g2mwinchester_flash.bin
+
+
+REM *** This is a bit hacky for a devkit image...
+REM *** The "devkit" SD patch looks for XeLL at 0xE4000 because XeBuild can't be consistent in where the start
+REM *** of the filesystem in a small block image is. SB patches are ignored pretty much.. just here to make sure
+REM *** the sections in the patch file are correct and xeBuild doesn't freak out (plz open source xebuild)
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15574_XDKBuild\khv_vfuses_flash.bin output\15574_XDKBuild\patches_devjasper.bin
+copy output\15574_XDKBuild\patches_devjasper.bin output\15574_XDKBuild\patches_devxenon.bin
+copy output\15574_XDKBuild\patches_devjasper.bin output\15574_XDKBuild\patches_devzephyr.bin
+copy output\15574_XDKBuild\patches_devjasper.bin output\15574_XDKBuild\patches_devfalcon.bin
 
 echo 15513 XDKBuild...
 
