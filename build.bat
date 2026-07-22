@@ -37,6 +37,7 @@ call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea_jtag
 
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses
 call:buildPatchSection src\KHV\1838 khv_1838_vfuses_devkit
+call:buildPatchSection src\KHV\1838 khv_1838_vfuses_jtag
 
 call:buildPatchSection src\KHV\1839 khv_1839_vfuses
 call:buildPatchSection src\KHV\1839 khv_1839_vfuses_devkit
@@ -341,6 +342,12 @@ copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1
 copy output\1838\patches_devxenon.bin output\1838\patches_devzephyr.bin
 copy output\1838\patches_devxenon.bin output\1838\patches_devfalcon.bin
 copy output\1838\patches_devxenon.bin output\1838\patches_devjasper.bin
+
+REM *** JTAGs of other board types don't really care that the boot chain we reboot in to is the same falcon CB since hwinit is skipped
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\1838\khv_1838_vfuses_jtag.bin output\1838\patches_falcon.bin
+copy output\1838\patches_falcon.bin output\1838\patches_xenon.bin
+copy output\1838\patches_falcon.bin output\1838\patches_zephyr.bin
+copy output\1838\patches_falcon.bin output\1838\patches_jasper.bin
 
 echo Done!
 
