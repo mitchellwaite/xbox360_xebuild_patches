@@ -31,6 +31,7 @@ call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_jtag
  
 call:buildPatchSection src\KHV\17559 khv_17559_vfuses
 call:buildPatchSection src\KHV\17559 hddssauth
+call:buildPatchSection src\KHV\17559 e76reboot
 
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses_rhea_jtag
