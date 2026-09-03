@@ -471,6 +471,11 @@ KMAKEPATCH WgcBindToUserNop
 # ============================================================================
 # Patch SataDiskAuthenticateDevice
 # ============================================================================
+# patch the call to XeKeysVerifyRSASignature to return a success
+KMAKEPATCH 0x801A680C
+0:
+   li %r3, 1
+9:
 
 # goto error path instead of VdDisplayFatalError
 KMAKEPATCH 0x801A6754

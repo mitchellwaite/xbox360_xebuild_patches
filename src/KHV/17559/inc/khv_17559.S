@@ -812,11 +812,32 @@ KMAKEPATCH 0x800E17CC
 #=============================================================================
 # Patches SataDiskAuthenticateDevice (Disables hdd security sector verification)
 #============================================================================
+
+# This is the old FreeBoot patch that makes SataDiskAuthenticateDevice always return true
+# It can cause corruption on FATXPlorer formatted hard drives and some retail drives
 # 00 15 D9 D8 00 00 00 02 38 60 00 01 4E 80 00 20
-KMAKEPATCH 0x8015D9D8
+#KMAKEPATCH 0x8015D9D8
+#0:
+#	li %r3, 1
+#	blr
+#9:
+
+#============================================================================
+# Rather than calling VdDisplayFatalError to display an E69 (hehehehe),
+# jump to the error handler in SataDiskAuthenticateDevice
+#============================================================================
+KMAKEPATCH 0x8015DA18
 0:
-	li %r3, 1
-	blr
+   KMAKEBRANCH 0x8015DB08
+9:
+
+#============================================================================
+# Patch error handler to set r3 to 1 indicating "auth success" if we hit
+# any of the error paths in SataDiskAuthenticateDevice
+#============================================================================
+KMAKEPATCH 0x8015DB08
+0:
+   li %r3, 1
 9:
 
 #=============================================================================
