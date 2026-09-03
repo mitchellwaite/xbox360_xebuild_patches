@@ -81,6 +81,14 @@
 .endm
 
 #;Arg0 is destination address
+.macro MAKEBGE DAddress
+.if(\DAddress)
+		#;Patch structure
+ 	bge	\DAddress - ((.-0b)+PatchAddr)
+.endif
+.endm
+
+#;Arg0 is destination address
 .macro MAKEBRANCHL DAddress 
 .if(\DAddress)
 		#;Patch structure

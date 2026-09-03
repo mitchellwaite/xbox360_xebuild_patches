@@ -578,6 +578,16 @@ KMAKEPATCH 0x800DD808
 9:
 
 #============================================================================
+# Patch the call to XeCryptBnDwLePkcs1Verify to always return SUCCESS
+# when verifying the security sector
+#============================================================================
+KMAKEPATCH 0x800DD914
+0:
+   li %r3, 1
+9:
+
+
+#============================================================================
 # Patch FatxProcessBootSector to ignore sector size limit, allowing drives
 # up to 2TB to function properly (Thanks @Eaton!)
 #============================================================================
