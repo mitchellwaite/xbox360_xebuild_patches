@@ -40,6 +40,13 @@ MAKEPATCH 0x1880
 # Vfuse patches for the HV
 # ============================================================================
 .ifdef vfuses
+
+# ============================================================================
+# force glitch mfg to use 0x0 cpu key for cbb as the mfg flag is removed
+#
+# Notes from cOz release: this is only set for VFUSE and GLICTH, does this
+# imply that JTAGs don't need this patch? Probably.
+# ============================================================================
 MAKEPATCH 0x000071EC
 0:
 	nop
@@ -155,6 +162,7 @@ MAKEPATCH 0xF0
 # ============================================================================	
 # Disable memory protection
 #	ExceptionVectorDSI
+# hv tlb_rpn set command location       mtspr   SPR_TLB_RPN, sp 
 # ============================================================================
 # 00 00 11 BC 00 00 00 01 48 00 15 4E
 MAKEPATCH 0x11BC
@@ -166,6 +174,12 @@ MAKEPATCH 0x11BC
 #	The li %r4, 7 in this is modified by the syscall0 backdoor 
 #	to toggle the memory protection state.
 #	ENABLED = 0x38800000 (li r4, 0) || DISABLED = 0x38800007 (li r4, 7)
+#
+# Notes from the cOz release:
+# - allows code excution anywhere in 0x80000000->0x9FFFFFFF range
+# - allows system thread manipulation of code/read only data without
+#   disabling encryption
+# - 0x0007 clears bits NoExec:DataPage:Readonly of RPN
 # ============================================================================
 # 00 00 15 4C 00 00 00 04 38 80 00 07 7C 21 20 78 7C 35 EB A6 48 00 11 C2
 MAKEPATCH HV_setmemprot
@@ -177,7 +191,7 @@ MAKEPATCH HV_setmemprot
 9:
 
 # ============================================================================
-#	??? nop's something out
+# disable LDV check
 # ============================================================================
 # 00 00 31 20 00 00 00 01 60 00 00 00
 MAKEPATCH 0x3120
@@ -186,7 +200,7 @@ MAKEPATCH 0x3120
 9:
 
 # ============================================================================
-# 	Disable fuse blowing ???
+# disable HvxBlowFuses
 # ============================================================================
 # 00 00 A5 60 00 00 00 02 38 60 00 01 4E 80 00 20
 MAKEPATCH 0x0000A560
@@ -196,7 +210,7 @@ MAKEPATCH 0x0000A560
 9:
 
 # ============================================================================
-#	HvxLoadImageData - nop's out a sig check?
+#	HvxLoadImageData - ignores return of SHA memdiff (for devkit xex)
 # ============================================================================
 # 00 02 A3 0C 00 00 00 02 60 00 00 00 60 00 00 00
 MAKEPATCH 0x0002A30C
@@ -377,6 +391,8 @@ MAKEPATCH Syscall_Table
 # ============================================================================
 #       HvxSecurity Functions  (sets machine acct flags)
 # ============================================================================
+
+# HvxSecuritySetDetected
 # 00 00 6B B0 00 00 00 02 38 60 00 00 4E 80 00 20
 MAKEPATCH 0x00006BB0
 0:
@@ -426,7 +442,7 @@ MAKEPATCH 0x0000813C
 9:
 
 # ============================================================================
-# 	Bypass CB sig check - Replaces call to XeCryptBnQwBeSigVerify
+#  disable CBA sig validation - Replaces call to XeCryptBnQwBeSigVerify
 # ============================================================================
 # 00 00 70 BC 00 00 00 01 38 60 00 01
 MAKEPATCH 0x000070BC
@@ -435,7 +451,7 @@ MAKEPATCH 0x000070BC
 9:
 
 # ============================================================================
-# 	Bypass CD check
+# disable CBB hash memcmp
 # ============================================================================
 # 00 00 72 68 00 00 00 01 38 60 00 00
 MAKEPATCH 0x00007268
@@ -444,7 +460,7 @@ MAKEPATCH 0x00007268
 9:
 
 # ============================================================================
-# 	NOP MachineCheck
+# 	NOP MachineCheck on bConsoleType
 # ============================================================================
 # 00 00 72 B4 00 00 00 01 60 00 00 00
 MAKEPATCH 0x000072B4
@@ -453,7 +469,7 @@ MAKEPATCH 0x000072B4
 9:
 
 # ============================================================================
-#	NOP MachineCheck
+#	NOP MachineCheck on bConsoleSequence    
 # ============================================================================
 # 00 00 72 C4 00 00 00 01 60 00 00 00
 MAKEPATCH 0x000072C4
@@ -462,7 +478,7 @@ MAKEPATCH 0x000072C4
 9:
 
 # ============================================================================
-#	NOP MachineCheck
+#	NOP MachineCheck on wConsoleSequenceAllow, force console to detect as retail
 # ============================================================================
 # 00 00 72 EC 00 00 00 02 60 00 00 00 39 60 00 01
 MAKEPATCH 0x000072EC
@@ -473,6 +489,8 @@ MAKEPATCH 0x000072EC
 
 # ============================================================================
 #	HvpCompareXGD2MediaID - Always return true
+#
+# Note from cOz release: locked memcmp Run GOD Content
 # ============================================================================
 # 00 02 4D 58 00 00 00 02 38 60 00 01 4E 80 00 20
 MAKEPATCH 0x00024D58
@@ -567,6 +585,8 @@ MAKEPATCH 0x0002CDD8
 
 # ============================================================================
 # 	HvxExpansionInstall - Disable conditional branch after XeCryptBnQwBeSigVerify
+#
+# Note from cOz release: if sig check fails pass it anyway, but don't use cpukey crypto
 # ============================================================================	
 # 00 03 08 9C 00 00 00 04 40 9A 00 08 3B A0 00 00 60 00 00 00 60 00 00 00
 MAKEPATCH 0x0003089C
@@ -618,6 +638,8 @@ KMAKEPATCH 0x8007C4B8
 
 #=============================================================================
 # Patches branch to RtlImageXexHeaderString within XexpLoadFile
+#
+# Note from cOz release: skip 0xC00000CC (BAD_NETWORK_NAME) error
 #=============================================================================
 # 00 07 C5 E8 00 00 00 01 38 60 00 00
 KMAKEPATCH 0x8007C5E8
@@ -627,6 +649,8 @@ KMAKEPATCH 0x8007C5E8
 
 #=============================================================================
 # Patch within XexpLoadFile
+#
+# Note from cOz release; skip 0xC000008B (resource not found) error
 #=============================================================================
 # 00 07 C6 34 00 00 00 01 39 60 00 00
 KMAKEPATCH 0x8007C634
@@ -636,6 +660,8 @@ KMAKEPATCH 0x8007C634
 
 #=============================================================================
 # Patch within XexpLoadFile
+#
+# Note from cOz release; skip 0xC000008B (resource not found) error
 #=============================================================================
 # 00 07 C6 84 00 00 00 01 39 60 00 00
 KMAKEPATCH 0x8007C684
@@ -655,6 +681,10 @@ KMAKEPATCH 0x8007AF08
 
 #=============================================================================
 # Patch within SfcxInspectLargeDataBlock
+#
+# Notes from cOz release:
+# - fix sfcxmu corruption issues on jasper bigblock - use 008 or higher for retail
+#   SfcxInspectLargeDataBlock 80091C28 lbz r23, 7(r30) # r23 = kernelresv blocks
 #=============================================================================
 # 00 09 4F 78 00 00 00 01 3A E0 00 10
 KMAKEPATCH 0x80094F78
@@ -664,11 +694,12 @@ KMAKEPATCH 0x80094F78
 
 #=============================================================================
 # Patch within SataCdRomAuthenticationExInitialize
+# disables AuthEx/AP25 on supp. drives 
 #=============================================================================
 # 00 09 98 D0 00 00 00 01 2B 0B 00 FF
 KMAKEPATCH 0x800998D0
 0:
-	cmplwi cr6, %r11, 0xff
+	cmplwi cr6, %r11, 0xff # originally checking XEIKA drive version !< 1
 9:
 
 
@@ -688,6 +719,8 @@ KMAKEPATCH 0x800992B4
 
 #=============================================================================
 # Patches XeKeysVerifyRSASignature
+#
+# Disable PIRS/LIVE Signature Check
 #=============================================================================
 # 00 10 9C 90 00 00 00 02 38 60 00 01 4E 80 00 20
 KMAKEPATCH 0x80109C90
@@ -748,6 +781,7 @@ KMAKEPATCH 0x8010B0E8
 
 #=============================================================================
 # Patches XeKeysRevokeIsDeviceRevoked
+# Note from cOz release:  usb device revocation (natal needs)
 #=============================================================================
 # 00 10 B2 78 00 00 00 02 38 60 00 00 4E 80 00 20 
 KMAKEPATCH 0x8010B278
@@ -790,7 +824,7 @@ KMAKEPATCH 0x80111990
 9:
 
 #=============================================================================
-# Patch within MassConfigureTransferCable (Skips hdd security sector verification???)
+# Patch within MassConfigureTransferCable (Skips hdd security sector verification)
 #=============================================================================
 # 00 0E 17 54 00 00 00 01 48 00 00 54
 KMAKEPATCH 0x800E1754
@@ -800,6 +834,9 @@ KMAKEPATCH 0x800E1754
 
 #=============================================================================
 # Patch within MassConfigureTransferCable
+#
+# Note from cOz release: Disable HDD size from SS
+# TODO: will this cause data corruption if somone attaches a retail drive???
 #=============================================================================
 # 00 0E 17 CC 00 00 00 03 83 5C 00 98 60 00 00 00 60 00 00 00
 KMAKEPATCH 0x800E17CC
