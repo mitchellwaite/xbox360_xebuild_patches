@@ -9,6 +9,9 @@ if exist output rmdir /S /Q output
 
 mkdir output
 
+REM *** We'll check this flag after each section so we don't try to continue if the kernel/4BL/2BL etc patches are broken
+set buildFailed=0
+
 echo Building kernel patch files...
 
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_sb
@@ -46,6 +49,12 @@ call:buildPatchSection src\KHV\1839 khv_1839_vfuses_devkit
 call:buildPatchSection src\KHV\6717 khv_6717_vfuses
 call:buildPatchSection src\KHV\6717 khv_6717_jtag
 
+if %buildFailed% neq 0 (
+    echo.
+    echo ERROR: One or more KHV patches failed to build.
+    exit /b 1
+)
+
 echo Done!
 
 echo.
@@ -66,6 +75,12 @@ call:buildPatchSection src\4BL\8453 cd_8453_jtag_1888
 
 call:buildPatchSection src\4BL\12905 cd_12905_vfuses
 
+if %buildFailed% neq 0 (
+    echo.
+    echo ERROR: One or more 4BL patches failed to build.
+    exit /b 1
+)
+
 echo Done!
 
 echo.
@@ -84,11 +99,24 @@ call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
 
 call:buildPatchSection src\2BL\5771 cbb_5771_jtag
 
+if %buildFailed% neq 0 (
+    echo.
+    echo ERROR: One or more 2BL patches failed to build.
+    exit /b 1
+)
+
 echo Done!
+
 
 echo Building 1BL patch files...
 
 call:buildPatchSection src\1BL\1411 ca_1411_freeboot
+
+if %buildFailed% neq 0 (
+    echo.
+    echo ERROR: One or more 1BL patches failed to build.
+    exit /b 1
+)
 
 echo Done!
 
@@ -96,6 +124,12 @@ echo Done!
 echo Building TEST patch files...
 
 call:buildPatchSection src\TEST test
+
+if %buildFailed% neq 0 (
+    echo.
+    echo ERROR: One or more TEST patches failed to build.
+    exit /b 1
+)
 
 echo Done!
 
@@ -105,6 +139,12 @@ echo Building XAM patch files...
 call:buildPatchSection src\XAM\17489_RGLoader rglXam
 del src\XAM\17489_RGLoader\rglXam.rglp
 move src\XAM\17489_RGLoader\rglXam.bin src\XAM\17489_RGLoader\rglXam.rglp
+
+if %buildFailed% neq 0 (
+    echo.
+    echo ERROR: One or more XAM patches failed to build.
+    exit /b 1
+)
 
 echo Done!
 
@@ -385,5 +425,7 @@ goto:eof
 
 :buildPatchSection
 bin\xenon-as.exe %~1\%~2.S -I include -I %~1\inc -o %~1\%~2.bin
+set /a "buildFailed|=%errorlevel%"
 bin\xenon-objcopy.exe %~1\%~2.bin -O binary
+set /a "buildFailed|=%errorlevel%"
 goto:eof
