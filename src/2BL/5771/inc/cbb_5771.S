@@ -1,17 +1,30 @@
-# Fuck if I know if this is accurate :)
+#;—————————————————————————————————————————————————————————————————————————————
+#;   2BL / CB 5771 (Falcon)                                                    
+#;                                               
+#; Thanks to cOz for releasing the patch sources, this is based on reverse engineering
+#; and the sources from the following:\
+#;
+#; https://github.com/cOzInABox/XeBuild/blob/main/patches/base_jtag/cb_5771_falcon.S                                        
+#;—————————————————————————————————————————————————————————————————————————————
 
 .include "macros.S"
+
+.set CB_ORIG_SIZE, 0x00009340
+.set FixAddr3dest, 0x00006F20
+
+	.globl _start
+_start:
 
 #==================================================================================
 # Extend the size of the loader
 #==================================================================================
 MAKEPATCH 0x0000000C
 0:
-	.long 0x000093f0
+	.long (CB_ORIG_SIZE+UTILSIZE)
 9:
 
 #==================================================================================
-# Print an exclamation mark to indicate we've reached CB
+# Print an @ symbol to indicate we've reached CB
 #==================================================================================
 MAKEPATCH 0x000003C0
 0:
@@ -20,6 +33,8 @@ MAKEPATCH 0x000003C0
 
 #==================================================================================
 # Replaces a bunch of li rXX, 0x17A instructions with a 0 immediate value
+#
+# Note from the cOz release: this fixes reloc addresses
 #==================================================================================
 MAKEPATCH 0x00000510
 0:
@@ -36,6 +51,9 @@ MAKEPATCH 0x00000720
 	li %r26, 0
 9:
 
+#;============================================================================
+#; fix CD flash address                                                       
+#;============================================================================
 MAKEPATCH 0x00000764
 0:
 	MAKEBRANCH 0x9388
@@ -43,6 +61,8 @@ MAKEPATCH 0x00000764
 
 #==================================================================================
 # Replaces a bunch of li rXX, 0x17A instructions with a 0 immediate value
+#
+# Note from the cOz release: this fixes reloc addresses
 #==================================================================================
 MAKEPATCH 0x000064D8
 0:
@@ -87,6 +107,8 @@ MAKEPATCH 0x00006720
 
 #==================================================================================
 # Disable branches leading to panics 0xA2, 0xA3 (VERIFY_SECOTP_8, VERIFY_SECOTP_9)
+#
+# Note from cOz release: remove smc size restriction
 #==================================================================================
 MAKEPATCH 0x00006A18
 0:
@@ -154,9 +176,15 @@ MAKEPATCH 0x000071B8
 	b 0x14
 9:
 
-MAKEPATCH 0x00009340
+MAKEPATCH CB_ORIG_SIZE
+	.set UartDot, PatchAddr
+	.set FixFuseAddr1, (PatchAddr + (1f - 0f))
+	.set FixFuseAddr2, (PatchAddr + (2f - 0f))
+	.set FixCdAddr, (PatchAddr + (3f - 0f))
+	.set CopyPatches, (PatchAddr + (4f - 0f))
+	.set UTILSIZE, (9f - 0f)
 0:
-# print an exclamation mark to UART
+# print an @ symbol to UART
 	li %r3, '@'
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
@@ -176,23 +204,28 @@ wait_for_character_sent:
 
 # 0x9370
 # fuse fixer 1
+1:
 	addis %r31, %r11, 2
-	addi %r31, %r31, -0x6500
+	addi %r31, %r31, -0x6500 # 0x9B00
 	blr
 
 # 0x937C
 # fuse fixer 2
+2:
 	addis %r9, %r10, 2
-	addi %r9, %r9, -0x6500
+	addi %r9, %r9, -0x6500 # 0x9B00
 	blr
 
-# 9388
+# Fix CD address
+3:
 	li %r24, 0
 	ori %r24, %r24, 0x9340
 	stw %r24, 0(%r8)
 	MAKEBRANCH 0x6f20
 
 # 9398
+# CopyPatches
+4:
 	lis %r3, -0x8000
 	sldi %r3, %r3, 0x20
 	oris %r3, %r3, 0x100
@@ -203,7 +236,7 @@ wait_for_character_sent:
 	addi %r3, %r3, -4
 	addi %r4, %r4, -4
 
-loc_93bc:	
+copyPatchIter:	
 	lwzu %r5, 4(%r3)
 	cmpwi %r5, -1
 	beq done
@@ -212,11 +245,11 @@ loc_93bc:
 	lwzu %r6, 4(%r3)
 	mtctr %r6
 
-loc_93d4:
+copyPatchLoop:
 	lwzu %r6, 4(%r3)
 	stwu %r6, 4(%r5)
-	bdnz loc_93d4
-	b loc_93bc
+	bdnz copyPatchLoop
+	b copyPatchIter
 
 done:
 	blr

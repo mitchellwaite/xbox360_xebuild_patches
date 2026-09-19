@@ -97,7 +97,10 @@ call:buildPatchSection src\2BL\7378 cbb_7378_vfuses
 
 call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
 
+call:buildPatchSection src\2BL\1940 cbb_1940_jtag
+call:buildPatchSection src\2BL\4579 cbb_4579_jtag
 call:buildPatchSection src\2BL\5771 cbb_5771_jtag
+call:buildPatchSection src\2BL\6750 cbb_6750_jtag
 
 if %buildFailed% neq 0 (
     echo.
