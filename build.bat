@@ -69,7 +69,10 @@ call:buildPatchSection src\4BL\12611 sd_shadowboot
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
 call:buildPatchSection src\4BL\9452 cd_9452_glitch2_rgl
 
+call:buildPatchSection src\4BL\8453 cd_8453_jtag_xenon
+call:buildPatchSection src\4BL\8453 cd_8453_jtag_zephyr
 call:buildPatchSection src\4BL\8453 cd_8453_jtag_falcon
+call:buildPatchSection src\4BL\8453 cd_8453_jtag_jasper
 call:buildPatchSection src\4BL\8453 cd_8453_jtag_rgl
 call:buildPatchSection src\4BL\8453 cd_8453_jtag_1888
 
