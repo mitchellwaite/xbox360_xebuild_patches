@@ -16,17 +16,6 @@
 .set HV_FlagFixer, 0xB510
 .set HV_setmemprot, 0x154c
 
-# Functions within the patches, some of these change depending on what
-# features are enabled.
-.ifdef vfuses
-   .set FixFusesAddr, 0xB560
-   .set PrintChar, 0xB56C
-   .set HV_PP_Syscall0, 0xB594
-.else
-   .set PrintChar, 0xB53C
-   .set HV_PP_Syscall0, 0xB564
-.endif
-
 # ============================================================================
 #	Branch to HV flag fix function???
 # ============================================================================
@@ -54,7 +43,7 @@ MAKEPATCH 0x000071EC
 
 MAKEPATCH 0x00001D10
 0:
-	bla 0xb560
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00001D24
@@ -65,7 +54,7 @@ MAKEPATCH 0x00001D24
 
 MAKEPATCH 0x00009778
 0:
-	bla 0xb560
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x000097A8
@@ -76,7 +65,7 @@ MAKEPATCH 0x000097A8
 
 MAKEPATCH 0x00009918
 0:
-	bla 0xb560
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00009948
@@ -87,7 +76,7 @@ MAKEPATCH 0x00009948
 
 MAKEPATCH 0x00009A68
 0:
-	bla 0xb560
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00009A98
@@ -98,7 +87,7 @@ MAKEPATCH 0x00009A98
 
 MAKEPATCH 0x00009D08
 0:
-	bla 0xb560
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00009D38
@@ -109,7 +98,7 @@ MAKEPATCH 0x00009D38
 
 MAKEPATCH 0x0000A078
 0:
-	bla 0xb560
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x0000A0A8
@@ -120,7 +109,7 @@ MAKEPATCH 0x0000A0A8
 
 MAKEPATCH 0x0000A138
 0:
-	bla 0xb560
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x0000A168
@@ -132,7 +121,7 @@ MAKEPATCH 0x0000A168
 
 MAKEPATCH 0x0000A470
 0:
-	bla 0xb560
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x0000A49C
@@ -243,13 +232,30 @@ MAKEPATCH 0x0002AA8C
 #	HV Flag Fixer??? branched from 0x1880
 #	Followed by HV Syscall0 PeekPoke backdoor starting at 0xB594
 # ============================================================================
-MAKEPATCH HV_FlagFixer
+MAKEPATCH 0x0000B510
+
+.set HV_FlagFixer, PatchAddr
+
+.ifdef vfuses
+	.set FixFusesAddr, (PatchAddr + (1f - 0f))
+.endif
+.ifdef jtag
+	.set FixHoldAddr, (PatchAddr + (2f - 0f))
+.endif
+	.set PrintChar, (PatchAddr + (3f - 0f))
+	.set HV_PP_Syscall0, (PatchAddr + (5f - 0f))
 0:
 	mflr %r8
+
+.ifdef rgh1_fat
+	li %r3, -0x2FE2 # remove mfg mode C01E|1000 or C01E|2000 0xD01E(slot1) 0xE01E(slot2)
+	sth %r3, 6(0)
+.else
 	lhz %r3, 6(0)
 	li %r4, 0x21
 	andc %r3, %r3, %r4
 	sth %r3, 6(0)
+.endif
 
    # This is the vfuse loading code
    # Seems like it's smart enough to look
@@ -258,10 +264,19 @@ MAKEPATCH HV_FlagFixer
    # hardcodes this to 0xE0000 which is kind of stupid IMO
 .ifdef vfuses
 	bla HV_HvpGetFlashBaseAddress
-	lwz %r4, 0x64(%r3) # 0x64 in NAND is the patch slot address
-	lwz %r5, 0x70(%r3) # 0x70 in NAND is the patch slot size
-	add %r3, %r3, %r4
-	add %r4, %r3, %r5
+
+	.ifdef jtag
+		# JTAGs use virtual fuses too!
+		# They're always at address 0x95000, don't need to
+		# do any patch slot size/count calculations 
+		oris %r4, %r3, 9
+		ori %r4, %r4, 0x5000
+	.else
+		lwz %r4, 0x64(%r3) # 0x64 in NAND is the patch slot address
+		lwz %r5, 0x70(%r3) # 0x70 in NAND is the patch slot size
+		add %r3, %r3, %r4
+		add %r4, %r3, %r5
+	.endif
 
 	lis %r3, 1
 	subi %r3, %r3, 0x60
@@ -279,13 +294,24 @@ MAKEPATCH HV_FlagFixer
 
 # ---------------------------------------------------
 # FixFusesAddr
-# 0xB560 w/ vfuses
-# TODO figure out how to calculate this automatically
 # ---------------------------------------------------
 .ifdef vfuses
+1:
 	lis %r3, 1
 	subi %r3, %r3, 0x60
 	blr
+.endif
+
+.ifdef jtag
+# ---------------------------------------------------
+# FixHoldAddr
+# ---------------------------------------------------
+2:
+	lis     %r4, 0x8000
+	rldicr  %r4, %r4, 32, 31
+	oris    %r4, %r4, 0x100
+	ori     %r4, %r4, 0x3080 	# 0x80000000_01003080 - had to patch freeboot.bin
+	ba      FixHoldAddrDone
 .endif
 
 # ---------------------------------------------------
@@ -294,6 +320,7 @@ MAKEPATCH HV_FlagFixer
 # 0xB53C w/o vfuses
 # TODO figure out how to calculate this automatically
 # ---------------------------------------------------
+3:
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
@@ -309,10 +336,8 @@ charwait:
 
 # ---------------------------------------------------
 # HV_PP_Syscall0 (syscall 0 backdoor)
-# 0xB594 w/ vfuses
-# 0xB564 w/o vfuses
-# TODO figure out how to calculate this automatically
 # ---------------------------------------------------
+5:
 	lis %r11, 0x7262                  # Freeboot syscall key - 0x72627472 "rbtr" 1st half
 	ori %r11, %r11, 0x7472             # 2nd half
 
@@ -326,6 +351,8 @@ checkOpType:  # 0xB5A8
 	beq cr6, hvxExecuteCode          # If it matches then it's hvxExecute
 	li %r5, HV_setmemprot             # Memory protections function address added in an earlier patch
 	lis %r6, 0x3880                   # Sets r6 to 0x38800000 - Remains like this if protections are to be ENABLED
+
+protectOffTest:	
 	cmplwi cr6, %r4, 2                # Check for 2 aka set mem protections DISABLED     
 	bne cr6, checkForMemProtectOn    # If not, branch to check for mem protections ENABLED - 0xb59c
 	ori %r6, %r6, 7                    # Updates r6 to 0x38800007 - Indicating protections are to be DISABLED
@@ -348,11 +375,12 @@ returnOne:
 	blr
 
 hvxExecuteCode:
-	mflr %r12
+	mflr %r12 # stow on the stack
 	std %r12, -8(%r1)
 	stdu %r1, -0x10(%r1)
 	mtlr %r5
 	mtctr %r7
+   # Copy dest = r5, src = r6, cnt = r7
 
 cpyLoop:
 	lwz %r4, 0(%r6)
