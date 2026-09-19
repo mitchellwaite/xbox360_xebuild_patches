@@ -1,13 +1,21 @@
-# Fuck if I know if this is accurate :)
+#;—————————————————————————————————————————————————————————————————————————————
+#;   3BL / CD 8453 (All)   
+#;
+#; This is based on a combination of reverse engineering, the RGLoader JTAG
+#; patch set, and cOz source release:
+#; https://github.com/cOzInABox/XeBuild/blob/main/patches/base_jtag/cd_8453_all.S                                                   
+#;—————————————————————————————————————————————————————————————————————————————
 
 .include "macros.S"
+
+.set CDOrigSz, 0x00005780		#; original size at 0xC of this BL
 
 #============================================================================
 # Extend the size of CD
 #============================================================================ 
 MAKEPATCH 0x0000000C
 0:
-	.long 0x00005830
+	.long (UtilitySize+CDOrigSz-8)
 9:
 
 #============================================================================
@@ -15,7 +23,7 @@ MAKEPATCH 0x0000000C
 #============================================================================ 
 MAKEPATCH 0x00000260
 0:
-	MAKEBRANCHL 0x5778
+	BLMAKEBRANCHL UartDotOut
 9:
 
 #============================================================================
@@ -25,7 +33,7 @@ MAKEPATCH 0x00000260
 .ifdef jtag_5bl_offset 
 MAKEPATCH 0x000003E0
 0:
-	MAKEBRANCHL 0x57a8
+	BLMAKEBRANCHL FixCeAddr
 9:
 .endif
 
@@ -34,7 +42,7 @@ MAKEPATCH 0x000003E0
 #============================================================================ 
 MAKEPATCH 0x000005A4
 0:
-	MAKEBRANCH 0x57b4
+	BLMAKEBRANCH CopyPatches
 9:
 
 #============================================================================
@@ -51,7 +59,14 @@ MAKEPATCH 0x00000948
 	addi %r9, %r9, 0x3360
 9:
 
+#; ============================================================================
+#;   Utility                                                                   
+#; ============================================================================
 MAKEPATCH 0x00005778
+	.set UartDotOut, PatchAddr
+	.set FixCeAddr, (PatchAddr + (1f - 0f))
+	.set CopyPatches, (PatchAddr + (2f - 0f))
+	.set UtilitySize, (9f-0f)
 0:
 	li %r3, '#'
 	lis %r4, -0x8000
@@ -69,16 +84,19 @@ wait_for_character_sent:
 	li %r3, 0x200
 	blr
 
-loc_57a8:
-	lis %r3, 1
+# FixCeAddr
+1:
 .ifdef jtag_5bl_offset
-	ori %r3, %r3, jtag_5bl_offset
+	lis %r3, jtag_5bl_offset@h
+	ori %r3, %r3, jtag_5bl_offset@l
 .else
+	nop
 	nop
 .endif
 	blr
 
-loc_57b4:
+# CopyPatches
+2:
 	mfmsr %r7
 	li %r8, 0x10
 	andc %r8, %r7, %r8
@@ -88,19 +106,17 @@ loc_57b4:
 	ori %r3, %r3, 0x2000
 	addi %r3, %r3, -4
 
-loc_57d4:
+iterLoop:
 	mtmsrd %r8
 	isync
 	lwzu %r4, 4(%r3)
 	cmpwi %r4, -1 # If we're seeing 0xFFFFFFFF we're done patching
-
-# 57e4
-	beq loc_581c
+	beq exit
 	addi %r4, %r4, -4
 	lwzu %r6, 4(%r3)
 	mtctr %r6
 
-loc_57f4:
+patchLoop:
 	mtmsrd %r8
 	isync
 	lwzu %r6, 4(%r3)
@@ -109,10 +125,10 @@ loc_57f4:
 	stwu %r6, 4(%r4)
 	dcbst 0, %r4
 	icbi 0, %r4
-	bdnz loc_57f4
-	b loc_57d4
+	bdnz patchLoop
+	b iterLoop
 
-loc_581c:
+exit:
 	sync
 	isync
 	rfid
