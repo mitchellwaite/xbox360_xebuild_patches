@@ -13,7 +13,6 @@
 .set HV_HvpGetFlashBaseAddress, 0x68C
 .set HV_HvpFlashCopy, 0x484
 
-.set HV_FlagFixer, 0xB510
 .set HV_setmemprot, 0x154c
 
 # ============================================================================
@@ -25,11 +24,25 @@ MAKEPATCH 0x1880
 	bla HV_FlagFixer
 9:
 
+.ifdef jtag
+#============================================================================
+# For JTAGs only, we need to patch HvxStartupProcessors
+#
+#   Change Thread Hold Address      addis   r4, r3, -3                       
+#============================================================================
+MAKEPATCH 0x00000C60
+.set FixHoldAddrDone, (PatchAddr + (9f - 0f))
+0:
+	ba      FixHoldAddr
+9:
+.endif
+
 # ============================================================================
 # Vfuse patches for the HV
 # ============================================================================
 .ifdef vfuses
 
+.ifndef jtag
 # ============================================================================
 # force glitch mfg to use 0x0 cpu key for cbb as the mfg flag is removed
 #
@@ -40,6 +53,7 @@ MAKEPATCH 0x000071EC
 0:
 	nop
 9:
+.endif
 
 MAKEPATCH 0x00001D10
 0:

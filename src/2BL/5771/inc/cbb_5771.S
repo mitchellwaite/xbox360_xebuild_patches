@@ -161,6 +161,7 @@ MAKEPATCH 0x00007130
 	nop
 9:
 
+.ifdef loadfare
 #==================================================================================
 # loadfare generated patches
 # - disable entire fuse check routine in the cb
@@ -175,6 +176,7 @@ MAKEPATCH 0x000071B8
 0:
 	b 0x14
 9:
+.endif
 
 MAKEPATCH CB_ORIG_SIZE
 	.set UartDot, PatchAddr

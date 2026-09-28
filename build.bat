@@ -32,7 +32,11 @@ call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_sb
 call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_jtag
  
-call:buildPatchSection src\KHV\17559 khv_17559_vfuses
+call:buildPatchSection src\KHV\17559 khv_17559_glitch2m
+call:buildPatchSection src\KHV\17559 khv_17559_glitch2
+call:buildPatchSection src\KHV\17559 khv_17559_glitch
+call:buildPatchSection src\KHV\17559 khv_17559_jtag
+
 call:buildPatchSection src\KHV\17559 hddssauth
 call:buildPatchSection src\KHV\17559 e76reboot
 
@@ -319,6 +323,12 @@ copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src
 echo 17559 FreeBoot...
 
 mkdir output\17559
+
+REM *** JTAG phat (xenon/zephyr/falcon/jasper)
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\1940\cbb_1940_jtag.bin + src\4BL\8453\cd_8453_jtag_xenon.bin + src\KHV\17559\khv_17559_jtag.bin output\17559\patches_xenon.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\4579\cbb_4579_jtag.bin + src\4BL\8453\cd_8453_jtag_zephyr.bin + src\KHV\17559\khv_17559_jtag.bin output\17559\patches_zephyr.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_falcon.bin + src\KHV\17559\khv_17559_jtag.bin output\17559\patches_falcon.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\6750\cbb_6750_jtag.bin + src\4BL\8453\cd_8453_jtag_jasper.bin + src\KHV\17559\khv_17559_jtag.bin output\17559\patches_jasper.bin
 
 copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mjasper.bin
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mfalcon.bin
