@@ -105,6 +105,7 @@ call:buildPatchSection src\2BL\6752 cbb_6752_vfuses
 call:buildPatchSection src\2BL\7378 cbb_7378_vfuses
 call:buildPatchSection src\2BL\9188 cbb_9188_vfuses
 call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
+call:buildPatchSection src\2BL\16128 cbb_16128_vfuses
 
 call:buildPatchSection src\2BL\5772 cbb_5772_glitch2
 call:buildPatchSection src\2BL\6752 cbb_6752_glitch2
@@ -375,8 +376,10 @@ REM *** glitch2m slim
 REM *** TODO verify: the default patch set shipped with XeBuild uses the same CB_B patch for glitch2 and glitch2m WB corona. Need to verify this actually works
 copy /b src\2BL\9188\cbb_9188_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mtrinity.bin
 copy /b src\2BL\13121\cbb_13121_vfuses.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mcorona.bin
-copy /b src\2BL\13182\cbb_13182_glitch2.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2corona_WB.bin
-copy /b src\2BL\13182\cbb_13182_glitch2_wb4g.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2corona_WB4G.bin
+copy /b src\2BL\13182\cbb_13182_glitch2.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mcorona_WB.bin
+copy /b src\2BL\13182\cbb_13182_glitch2_wb4g.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mcorona_WB4G.bin
+copy /b src\2BL\16128\cbb_16128_vfuses.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mwinchester.bin 
+
 
 echo Done!
 
