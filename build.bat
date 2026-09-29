@@ -79,6 +79,7 @@ call:buildPatchSection src\4BL\8453 cd_8453_jtag_falcon
 call:buildPatchSection src\4BL\8453 cd_8453_jtag_jasper
 call:buildPatchSection src\4BL\8453 cd_8453_jtag_rgl
 call:buildPatchSection src\4BL\8453 cd_8453_jtag_1888
+call:buildPatchSection src\4BL\8453 cd_8453_glitch
 
 call:buildPatchSection src\4BL\12905 cd_12905_vfuses
 
@@ -329,6 +330,10 @@ copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\1940\cbb_1940_jtag.bin + src
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\4579\cbb_4579_jtag.bin + src\4BL\8453\cd_8453_jtag_zephyr.bin + src\KHV\17559\khv_17559_jtag.bin output\17559\patches_zephyr.bin
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_falcon.bin + src\KHV\17559\khv_17559_jtag.bin output\17559\patches_falcon.bin
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\6750\cbb_6750_jtag.bin + src\4BL\8453\cd_8453_jtag_jasper.bin + src\KHV\17559\khv_17559_jtag.bin output\17559\patches_jasper.bin
+
+REM *** RGH1 phat
+
+copy /b src\ffff.bin + src\4BL\8453\cd_8453_glitch.bin + src\KHV\17559\khv_17559_glitch.bin output\17559\patches_fat.bin
 
 copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mjasper.bin
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mfalcon.bin
