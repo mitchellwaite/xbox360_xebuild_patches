@@ -1,6 +1,12 @@
 # Fuck if I know if this is accurate :)
+#
+# This is based on a combination of reverse engineering and cOz's release
+# https://github.com/cOzInABox/XeBuild/blob/main/patches/base_glitch/cd_9452_patches.S
+#
 
 .include "macros.S"
+
+.set CD_ORIG_SIZE, 0x00004F20
 
 #============================================================================
 # Branch to CDXell... this replaces the first instruction at the entrypoint
@@ -8,7 +14,7 @@
 #============================================================================   
 MAKEPATCH 0x0000028C
 0:
-	bl 0x4C94
+	BLMAKEBRANCHL CheckXell
 9:
 
 #============================================================================
@@ -30,7 +36,21 @@ MAKEPATCH 0x00000830
 # PCI init, SMC handshake, patching engine, Boot XeLL
 # This section of the patch is based on CDXell
 #============================================================================   
-MAKEPATCH 0x00004F20
+MAKEPATCH CD_ORIG_SIZE
+
+.set AddonSize, (9f-0f)
+.set CheckXell, PatchAddr
+
+.set PciTable, ((PatchAddr + (1f - 0f))-4)
+.set DotOut, (PatchAddr + (2f - 0f))
+.set CopyPatches, (PatchAddr + (3f - 0f))
+
+# CD 9452 is only used for glitch vfuses. JTAG vfuses use CD 8453
+.ifdef vfuses
+	.set fixflagsA, (PatchAddr + (4f - 0f))
+	.set fixflagsB, (PatchAddr + (5f - 0f))
+.endif
+
 0:
    # This section of the patch appears to skip UART 
    # init if NAND at 0x4D is set to 0
@@ -43,7 +63,7 @@ MAKEPATCH 0x00004F20
 	cmplwi %r4, 0
 	beq smc_init
 
-	lis %r3, -0x51ff # 0xAE010000 -> set UART to 38400, 8, N, 1 (CYGNOS compatible??? this is what XeLL sets the reg to in cygnos mode)
+	lis %r3, -0x51ff # 0xAE010000 -> set UART to 38400, 8, N, 1 (CYGNOS compatible)
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
@@ -53,7 +73,7 @@ MAKEPATCH 0x00004F20
 # SMC handshake
 smc_init:
 	mflr %r12
-	bl print_dot_uart
+	BLMAKEBRANCHL DotOut
 	mtlr %r12
 	li %r8, 0x200
 	oris %r8, %r8, 0x8000
@@ -160,19 +180,20 @@ load_xell:
 	oris %r5, %r5, 0x8000
 	sldi %r5, %r5, 0x20
    oris %r5, %r5, xell_offset
-	ori %r5, %r5, 0
+	ori %r5, %r5, 0 #; %r5 = 80000200_c8****** source address
 	lis %r6, -0x8000
 	sldi %r6, %r6, 0x20
-	oris %r6, %r6, 0x1c00
-	mr %r9, %r6
-	mtspr 0x139, %r11
+	oris %r6, %r6, 0x1c00 #; %r6 = 80000000_1c000000 dest address
+	mr %r9, %r6 #; %r9 = rfid address
+
+	mtspr 0x139, %r11 #; zero hrmor
 
 # set POST code 0x11   
 	li %r3, 0x11
 	sldi %r3, %r3, 0x38
 	std %r3, 0(%r7)
 
-	lis %r4, 1
+	lis %r4, 1 #; copy 0x10000*32bit = 256k
 	mtctr %r4
 
 xell_copy_loop:
@@ -203,8 +224,8 @@ pci_init:
 	lis %r3, -0x8000
 	ori %r3, %r3, 0x17c
 	sldi %r3, %r3, 0x20
-	oris %r3, %r3, 0x400
-	ori %r3, %r3, 0x50ec # Address of PCI_INIT_LIST. If code is added before the struct, this must be changed
+	oris %r3, %r3, 0x400			#; 0x8000017C_04000000 CD base address
+	ori %r3, %r3, PciTable@l 	#; table offset -4
 	li %r30, 0x200
 	oris %r30, %r30, 0x8000
 	sldi %r30, %r30, 0x20
@@ -225,7 +246,8 @@ pci_init_loop:
 	b pci_init_loop
 
 # this is a bunch of LONGs for hardware init
-PCI_INIT_LIST:
+# gligli's PCI init table
+1:
    # pci-pci bridge
 	.long 0xD0000010
 	.long 0xEA000000
@@ -314,8 +336,9 @@ PCI_INIT_LIST:
    # End of list!
    .long 0x00000000
 
-print_dot_uart:
-	li %r3, 0x2e            # ASCII 0x2E (.)
+# DotOut: prints a dot character over UART
+2:
+	li %r3, '.'            # ASCII 0x2E
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
@@ -330,17 +353,20 @@ wait_for_character_sent:
 	blr
 # end of func
 
-# TODO this looks like the patching engine
+# CopyPatches
+3:
 	mfmsr %r7
 	li %r8, 0x10
 	andc %r8, %r7, %r8
 	mtmsrd %r8
-	bl print_dot_uart
+	BLMAKEBRANCHL DotOut
+
 	li %r5, 0x200
 	oris %r5, %r5, 0x8000
 	sldi %r5, %r5, 0x20
 	oris %r5, %r5, 0xc800
-	ori %r5, %r5, 0
+	ori %r5, %r5, 0			# 80000200_c8000000 flash address
+
 	lwz %r6, 0x70(%r5) # Load the patch slot size from 0x70 in NAND
 	lwz %r4, 0x64(%r5) # load the first patch slot address from 0x64 in NAND
 	cmplwi %r6, 0      # Test if the patch slot size is 0 (xeBuild bug? even if not, the images don't boot when this is 0)
@@ -352,26 +378,28 @@ patch_slot_size_nonzero:
 
 # If this is built for a vfuse patch set, we need to skip past the vfuses
 # at the beginning of the patch slot
+#
+# cOz comment: to the start of patches -4
 .ifdef vfuses
 	addi %r4, %r4, 0x5c
 .else
    addi %r4, %r4, 0xc
 .endif
 
-	or %r3, %r5, %r4
-	isync
+	or %r3, %r5, %r4	# or into the flash base
+	isync					# make sure this all executed before carrying on
    
-loc_5238:
+iterLoop:
 	mtmsrd %r8
 	isync
 	lwzu %r4, 4(%r3)
 	cmpwi %r4, -1
-	beq loc_5280
+	beq exit
 	addi %r4, %r4, -4
 	lwzu %r6, 4(%r3)
 	mtctr %r6
 
-loc_5258:
+patchLoop:
 	mtmsrd %r8
 	isync
 	lwzu %r6, 4(%r3)
@@ -380,22 +408,24 @@ loc_5258:
 	stwu %r6, 4(%r4)
 	dcbst 0, %r4
 	icbi 0, %r4
-	bdnz loc_5258
-	b loc_5238
+	bdnz patchLoop
+	b iterLoop
 
-loc_5280:
+exit:
 	sync
 	isync
 	mtmsrd %r7
 	rfid
 
 .ifdef vfuses
-loc_5290:
+# fixFlagsA
+4:
 	ori %r10, %r10, 0x1e
 	or %r11, %r11, %r10
 	blr
 
-loc_529C:
+# fixFlagsB
+5:
 	ori %r28, %r28, 0x1e
 	or %r11, %r11, %r28
 	blr
@@ -423,6 +453,9 @@ MAKEPATCH 0x00000920
 #============================================================================
 # NOP out panic 0xB6 (DECODE_FUSES)
 # What was the point of reading the virtual fuses earlier? Who knows
+#
+# According to cOz:
+# skip a check on a bit set in SB
 #============================================================================
 MAKEPATCH 0x00000990
 0:
@@ -431,12 +464,12 @@ MAKEPATCH 0x00000990
 
 MAKEPATCH 0x00000E54
 0:
-	bl 0x443c # Branches to loc_5290 that we defined earlier for fuse fixing
+	BLMAKEBRANCHL fixFlagsA
 9:
 
 MAKEPATCH 0x000008C4
 0:
-	bl 0x49D8 # Branches to loc_529C that we defined earlier for fuse fixing
+	BLMAKEBRANCHL fixFlagsB
 9:
 .endif
 

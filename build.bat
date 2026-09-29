@@ -71,6 +71,7 @@ call:buildPatchSection src\4BL\12611 sd_vfuses_sb
 call:buildPatchSection src\4BL\12611 sd_shadowboot
 
 call:buildPatchSection src\4BL\9452 cd_9452_vfuses
+call:buildPatchSection src\4BL\9452 cd_9452_glitch2
 call:buildPatchSection src\4BL\9452 cd_9452_glitch2_rgl
 
 call:buildPatchSection src\4BL\8453 cd_8453_jtag_xenon
@@ -102,6 +103,9 @@ call:buildPatchSection src\2BL\5772 cbb_5772_vfuses
 call:buildPatchSection src\2BL\6752 cbb_6752_vfuses
 
 call:buildPatchSection src\2BL\7378 cbb_7378_vfuses
+
+call:buildPatchSection src\2BL\9188 cbb_9188_glitch2
+call:buildPatchSection src\2BL\9188 cbb_9188_vfuses
 
 call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
 
@@ -335,15 +339,25 @@ REM *** RGH1 phat
 
 copy /b src\ffff.bin + src\4BL\8453\cd_8453_glitch.bin + src\KHV\17559\khv_17559_glitch.bin output\17559\patches_fat.bin
 
+REM *** glitch2 phat
+
+REM *** glitch2 slim
+copy /b src\2BL\9188\cbb_9188_glitch2.bin + src\4BL\9452\cd_9452_glitch2.bin + src\KHV\17559\khv_17559_glitch2.bin output\17559\patches_g2trinity.bin
+
+REM *** Fun fact, trinity glitch is the same patch set as trinity glitch2
+copy output\17559\patches_g2trinity.bin output\17559\patches_trinity.bin
+
+REM *** glitch2m phat
 copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mjasper.bin
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mfalcon.bin
 copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mxenon_ELPIS.bin
-copy /b src\2BL\4577\cbb_4577_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mzephyr.bin
 
-REM *** Xenon uses the 5772 CB_B, same as falcon, so the patch sets are the same
+REM *** Xenon and Zephyr EXT_CLK uses the 5772 CB_B, same as falcon, so the patch sets are the same
 copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mxenon.bin
+copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mzephyr.bin
 
-REM *** Never thought i'd need to do a corona patch set but here we are
+REM *** glitch2m slim
+
 copy /b src\2BL\13121\cbb_13121_vfuses.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mcorona.bin
 
 echo Done!
