@@ -47,8 +47,8 @@ MAKEPATCH CD_ORIG_SIZE
 
 # CD 9452 is only used for glitch vfuses. JTAG vfuses use CD 8453
 .ifdef vfuses
-	.set fixflagsA, (PatchAddr + (4f - 0f))
-	.set fixflagsB, (PatchAddr + (5f - 0f))
+	.set fixFlagsA, (PatchAddr + (4f - 0f))
+	.set fixFlagsB, (PatchAddr + (5f - 0f))
 .endif
 
 0:

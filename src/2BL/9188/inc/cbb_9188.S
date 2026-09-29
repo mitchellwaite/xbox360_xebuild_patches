@@ -44,7 +44,7 @@ MAKEPATCH 0x00005660
 .set dwSysUpdateSlotSize,	0x70
 .set fusesSize,				0xC
 
-MAKEPATCH 0x000067E4
+MAKEPATCH 0x00004C4C
 0:
 	ld %r3, qwSbFlashAddrOff(%r29)
 	lwz %r4, dwSysUpdateAddr(%r3)
@@ -56,7 +56,7 @@ MAKEPATCH 0x000067E4
 	MAKEBRANCHL	XeCryptCopyQwVec
 9:
 
-MAKEPATCH 0x00006BE0
+MAKEPATCH 0x00005048
 0:
 	ld %r3, 0x258(%r26)
 	lwz %r4, 0x64(%r3)
