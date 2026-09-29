@@ -83,6 +83,7 @@ call:buildPatchSection src\4BL\8453 cd_8453_jtag_1888
 call:buildPatchSection src\4BL\8453 cd_8453_glitch
 
 call:buildPatchSection src\4BL\12905 cd_12905_vfuses
+call:buildPatchSection src\4BL\12905 cd_12905_glitch2
 
 if %buildFailed% neq 0 (
     echo.
@@ -101,13 +102,15 @@ call:buildPatchSection src\2BL\14352 sb_shadowboot
 call:buildPatchSection src\2BL\4577 cbb_4577_vfuses
 call:buildPatchSection src\2BL\5772 cbb_5772_vfuses
 call:buildPatchSection src\2BL\6752 cbb_6752_vfuses
-
 call:buildPatchSection src\2BL\7378 cbb_7378_vfuses
-
-call:buildPatchSection src\2BL\9188 cbb_9188_glitch2
 call:buildPatchSection src\2BL\9188 cbb_9188_vfuses
-
 call:buildPatchSection src\2BL\13121 cbb_13121_vfuses
+
+call:buildPatchSection src\2BL\5772 cbb_5772_glitch2
+call:buildPatchSection src\2BL\6752 cbb_6752_glitch2
+call:buildPatchSection src\2BL\7378 cbb_7378_glitch2
+call:buildPatchSection src\2BL\9188 cbb_9188_glitch2
+call:buildPatchSection src\2BL\13121 cbb_13121_glitch2
 
 call:buildPatchSection src\2BL\1940 cbb_1940_jtag
 call:buildPatchSection src\2BL\4579 cbb_4579_jtag
@@ -336,21 +339,30 @@ copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\6750\cbb_6750_jtag.bin + src\4BL\8453\cd_8453_jtag_jasper.bin + src\KHV\17559\khv_17559_jtag.bin output\17559\patches_jasper.bin
 
 REM *** RGH1 phat
-
+REM *** Fun fact: RGH1 patch set for phats is universal and there's no CB patch. Still not going to make an RGH1 version of anything else :)
 copy /b src\ffff.bin + src\4BL\8453\cd_8453_glitch.bin + src\KHV\17559\khv_17559_glitch.bin output\17559\patches_fat.bin
 
 REM *** glitch2 phat
+copy /b src\2BL\6752\cbb_6752_glitch2.bin + src\4BL\9452\cd_9452_glitch2.bin + src\KHV\17559\khv_17559_glitch2.bin output\17559\patches_g2jasper.bin
+copy /b src\2BL\5772\cbb_5772_glitch2.bin + src\4BL\9452\cd_9452_glitch2.bin + src\KHV\17559\khv_17559_glitch2.bin output\17559\patches_g2falcon.bin
+copy /b src\2BL\7378\cbb_7378_glitch2.bin + src\4BL\9452\cd_9452_glitch2.bin + src\KHV\17559\khv_17559_glitch2.bin output\17559\patches_g2xenon_ELPIS.bin
+
+REM *** xenon (non-elpis) and zephyr EXT_CLK use falcon bootloaders
+copy output\17559\patches_g2falcon.bin output\17559\patches_g2xenon.bin
+copy output\17559\patches_g2falcon.bin output\17559\patches_g2zephyr.bin
 
 REM *** glitch2 slim
 copy /b src\2BL\9188\cbb_9188_glitch2.bin + src\4BL\9452\cd_9452_glitch2.bin + src\KHV\17559\khv_17559_glitch2.bin output\17559\patches_g2trinity.bin
+copy /b src\2BL\13121\cbb_13121_glitch2.bin + src\4BL\12905\cd_12905_glitch2.bin + src\KHV\17559\khv_17559_glitch2.bin output\17559\patches_g2corona.bin
+
 
 REM *** Fun fact, trinity glitch is the same patch set as trinity glitch2
 copy output\17559\patches_g2trinity.bin output\17559\patches_trinity.bin
 
 REM *** glitch2m phat
-copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mjasper.bin
-copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mfalcon.bin
-copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mxenon_ELPIS.bin
+copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mjasper.bin
+copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mfalcon.bin
+copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mxenon_ELPIS.bin
 
 REM *** Xenon and Zephyr EXT_CLK uses the 5772 CB_B, same as falcon, so the patch sets are the same
 copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mxenon.bin
@@ -358,7 +370,7 @@ copy output\17559\patches_g2mfalcon.bin output\17559\patches_g2mzephyr.bin
 
 REM *** glitch2m slim
 
-copy /b src\2BL\13121\cbb_13121_vfuses.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_vfuses.bin output\17559\patches_g2mcorona.bin
+copy /b src\2BL\13121\cbb_13121_vfuses.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mcorona.bin
 
 echo Done!
 

@@ -32,6 +32,7 @@ MAKEPATCH 0x000059B8
 # Thus, the glitch2m patch set produced here *will* be different (and actually work)
 .ifdef vfuses
 
+# hehehehehe 420
 MAKEPATCH 0x00000420
 0:
 	li %r4, 0x601
