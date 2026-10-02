@@ -258,9 +258,13 @@ MAKEPATCH FixFusesAddr
 
 # ============================================================================
 # Syscall 0 Backdoor (FreeBoot, RGL, etc.)
-# ============================================================================
+#
+# This is a version of the standard syscall 0 backdoor that removes the
+# memory protection toggles, since they're no longer needed.
+#
 #;// HvxExecute  Params( 0x72627472, 4, (QWORD)srcAddr, (QWORD)destAddr, (QWORD) lenInBytes)  will jump to destAddr after memcpy
 #;// MemCpy      Params( 0x72627472, 5, (QWORD)srcAddr, (QWORD)destAddr, (QWORD) lenInBytes)
+# ============================================================================
 MAKEPATCH HV_PP_Syscall0
 0:
    lis %r11, 0x7262                  # Freeboot syscall key - 0x72627472 "rbtr" 1st half
@@ -271,30 +275,10 @@ MAKEPATCH HV_PP_Syscall0
    ba HV_HvxGetVersions             # If not, branch back to the real HvxGetVersions
 
 checkOpType:
-   cmplwi cr6, %r4, 4                # Check for 4 aka hvxExecute
+   cmplwi cr6, %r4, 4               # Check for 4 aka hvxExecute
    bgt cr6, doMemCpy                # If it's greter than 4 it must be MemCpy         
    beq cr6, hvxExecuteCode          # If it matches then it's hvxExecute
-   li %r5, HV_setmemprot             # Memory protections function address added in an earlier patch
-   lis %r6, 0x3880                   # Sets r6 to 0x38800000 - Remains like this if protections are to be ENABLED
-   cmplwi cr6, %r4, 2                # Check for 2 aka set mem protections DISABLED     
-   bne cr6, checkForMemProtectOn    # If not, branch to check for mem protections ENABLED - 0xb59c
-   ori %r6, %r6, 7                    # Updates r6 to 0x38800007 - Indicating protections are to be DISABLED
-   b setMemProtections              # Branch to set memory protections setup 
-
-checkForMemProtectOn:   
-   cmplwi cr6, %r4, 3                # Check for 3 aka set mem protections ENABLED
-   bne cr6, returnOne               # If not, branch to returnOne to exit - 0xb5bc
-
-setMemProtections:
-   li %r0, 0
-   stw %r6, 0(%r5)                    # Sets the start of the set mem function based on what was set in r6 earlier - ENABLED = 0x38800000 (li r4, 0) || DISABLED = 0x38800007 (li r4, 7)
-   dcbst 0, %r5
-   icbi 0, %r5
-   sync 0
-   isync
-
-returnOne:
-   li %r3, 1
+   li %r3, 1                        # Otherwise, just return 1. The memory protection patches do nothing.
    blr
 
 hvxExecuteCode:
@@ -342,31 +326,27 @@ MAKEPATCH Syscall_Table
 9:
 
 # ============================================================================
+# These patches modify the common instruction/data storage interrupt handler
+# routines to make all image memory RWX and all heap memory executable. This
+# is an improved version of the old patch which now honors page protections
+# on heap memory allowing this patch to be enabled at all times even when the
+# back compat emulator is running.
 #
-# Memory protection toggle for 1838 kernel (default ON)
-#
-#	The li %r4, 7 in this is modified by the syscall0 backdoor 
-#	to toggle the memory protection state.
-#	ENABLED = 0x38800000 (li r4, 0) || DISABLED = 0x38800007 (li r4, 7)
-# 
-#  We'll leave it enabled by default because there's no DashLaunch for 1838
+# Thanks to grimdoomer for providing these!
 # ============================================================================
-MAKEPATCH 0x00001134
+MAKEPATCH 0x00001288
 0:
-	ba  HV_setmemprot
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
-MAKEPATCH HV_setmemprot
+MAKEPATCH 0x0000105C
 0:
-	li  %r4, 0
-	andc %r1, %r1, %r4
-	mtspr 0x3b5, %r1
-	ba 0x1138
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
-MAKEPATCH 0x0000230C
+MAKEPATCH 0x00001078
 0:
-	ori       %r4, %r4, 0x1B0
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
 # ============================================================================
