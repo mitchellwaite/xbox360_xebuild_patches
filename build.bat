@@ -118,6 +118,7 @@ call:buildPatchSection src\2BL\13182 cbb_13182_glitch2_wb4g
 call:buildPatchSection src\2BL\1940 cbb_1940_jtag
 call:buildPatchSection src\2BL\4579 cbb_4579_jtag
 call:buildPatchSection src\2BL\5771 cbb_5771_jtag
+call:buildPatchSection src\2BL\5771 cbb_5771_jtag_rgl
 call:buildPatchSection src\2BL\6750 cbb_6750_jtag
 
 if %buildFailed% neq 0 (
@@ -414,18 +415,21 @@ copy output\1888\patches_g2mfalcon.bin output\1888\patches_g2mzephyr.bin
 REM *** Elpis is basically just a fancy Rhea GPU, so the kernel patch can be the same. Use 7378 loader to avoid Samsung + Rhea hwinit issues
 copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\1888\khv_1888_vfuses.bin output\1888\patches_g2mxenon_ELPIS.bin
 
-REM *** This is a test for falcon JTAGs
+REM *** This is a test for falcon JTAGs... 1888 on JTAG doesn't really work right atm
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_1888.bin + src\KHV\1888\khv_vfuses_rhea_jtag.bin output\1888\patches_falcon.bin
 
 
-REM *** 1838 is a bit weird with the patches- ordinarily, you'd think we'd patch the GPU driver like we do for 1888
-REM *** However, the GPU is LESS stable with the ASIC ID and EDRAM patches directly copied over. We need to make
-REM *** some other changes in the 1838 video driver to make it stable, and even then, sometimes Rhea won't train
-REM *** the edram properly. It's usually fine after a reboot, though. Thanks to Scar (kavkazsila) on Discord for all the help! 
-
-REM *** In addition, UNLIKE 17489.... xeBuild puts XeLL in different spots for 16mb DevGL and 16mb glitch2m 1838
-REM *** images. So, that means the SD patch needs to calculate the location of XeLL. Luckily, XeBuild always puts
-REM *** the flashfs after the second patch slot so this can be done relatively easily
+REM *******************************************************
+REM * 1838 XDKBuild
+REM *
+REM * Thanks to Scar (kavkazsila) on Discord for all the
+REM * help getting this going on rhea/zeus GPUs, without
+REM * your help 1838 and 1839 would have been unusable.
+REM *
+REM * Do note that 1838 is NOT usable on any BB PSB
+REM * machines, there is only support for 16MB and 64MB
+REM * small block NAND types in the kernel
+REM *******************************************************
 echo 1838 XDKBuild...
 
 mkdir output\1838
@@ -440,8 +444,12 @@ copy output\1838\patches_devxenon.bin output\1838\patches_devzephyr.bin
 copy output\1838\patches_devxenon.bin output\1838\patches_devfalcon.bin
 copy output\1838\patches_devxenon.bin output\1838\patches_devjasper.bin
 
-REM *** JTAGs of other board types don't really care that the boot chain we reboot in to is the same falcon CB since hwinit is skipped
-copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\1838\khv_1838_vfuses_jtag.bin output\1838\patches_falcon.bin
+REM ******************************************************
+REM * JTAGs of other board types don't really care that
+REM * the boot chain we reboot in to is the same falcon
+REM * CB since hwinit is skipped
+REM ******************************************************
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag_rgl.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\1838\khv_1838_vfuses_jtag.bin output\1838\patches_falcon.bin
 copy output\1838\patches_falcon.bin output\1838\patches_xenon.bin
 copy output\1838\patches_falcon.bin output\1838\patches_zephyr.bin
 copy output\1838\patches_falcon.bin output\1838\patches_jasper.bin
