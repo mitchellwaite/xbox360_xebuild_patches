@@ -384,11 +384,22 @@ copy /b src\2BL\16128\cbb_16128_vfuses.bin + src\4BL\12905\cd_12905_vfuses.bin +
 
 echo Done!
 
+REM ********************************************************
+REM * 6717 FreeBoot patch set
+REM *
+REM * glitch2m/DevGL/JTAG
+REM ********************************************************
 echo 6717 FreeBoot...
 
 mkdir output\6717
 
-REM *** Falcon/Zephyr/Xenon are all the same patch set
+REM *** JTAG phat (xenon/zephyr/falcon/jasper)
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\1940\cbb_1940_jtag.bin + src\4BL\8453\cd_8453_jtag_xenon.bin + src\KHV\6717\khv_6717_jtag.bin output\6717\patches_xenon.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\4579\cbb_4579_jtag.bin + src\4BL\8453\cd_8453_jtag_zephyr.bin + src\KHV\6717\khv_6717_jtag.bin output\6717\patches_zephyr.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_falcon.bin + src\KHV\6717\khv_6717_jtag.bin output\6717\patches_falcon.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\6750\cbb_6750_jtag.bin + src\4BL\8453\cd_8453_jtag_jasper.bin + src\KHV\6717\khv_6717_jtag.bin output\6717\patches_jasper.bin
+
+REM *** glitch2m Falcon/Zephyr/Xenon are all the same patch set
 copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6717\khv_6717_vfuses.bin output\6717\patches_g2mfalcon.bin
 copy output\6717\patches_g2mfalcon.bin output\6717\patches_g2mzephyr.bin
 copy output\6717\patches_g2mfalcon.bin output\6717\patches_g2mxenon.bin
