@@ -393,6 +393,7 @@ copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src
 copy output\6717\patches_g2mfalcon.bin output\6717\patches_g2mzephyr.bin
 copy output\6717\patches_g2mfalcon.bin output\6717\patches_g2mxenon.bin
 
+REM *** Use 6752 for Jasper
 copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6717\khv_6717_vfuses.bin output\6717\patches_g2mjasper.bin
 
 REM *** use CB_B 7378 for elpis
@@ -400,6 +401,11 @@ copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src
 
 echo Done!
 
+REM ********************************************************
+REM * 1888 FreeBoot
+REM *
+REM * JTAGs tbd
+REM ********************************************************
 echo 1888 FreeBoot...
 
 mkdir output\1888
