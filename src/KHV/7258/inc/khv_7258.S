@@ -2,14 +2,12 @@
 
 .include "macros.S"
 
-.set FixFusesAddr, 0xD378
-
 # ============================================================================
 #	Branch to HV flag fix function
 # ============================================================================
 MAKEPATCH 0x000019A0
 0:
-	bla 0xd328
+	bla HvFlagFixer
 9:
 
 # ============================================================================
@@ -93,12 +91,6 @@ MAKEPATCH 0x000000F0
 	.long 0x00000000
 9:
 
-# TODO why do we even have this, it extends the syscall table, for what?
-MAKEPATCH 0x00001420
-0:
-	cmplwi %r0, 0x7c
-9:
-
 # ============================================================================
 # Disable memory protection
 #	ExceptionVectorDSI
@@ -106,17 +98,19 @@ MAKEPATCH 0x00001420
 
 # TODO replace this with Grim or Brent's memory protection patches so we don't need to toggle for xefu
 
-MAKEPATCH 0x0000114C
+MAKEPATCH 0x00001070
 0:
-	ba 0x1570
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
-MAKEPATCH 0x00001570
+MAKEPATCH 0x0000108C
 0:
-	li %r4, 7
-	andc %r1, %r1, %r4
-	mtspr 0x3b5, %r1
-	ba 0x1150
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
+9:
+
+MAKEPATCH 0x00001268
+0:
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
 # ============================================================================
@@ -152,16 +146,32 @@ MAKEPATCH 0x000054B4
 9:
 
 # ============================================================================
-#	HV Flag Fixer branched from 0x19A0
+#	HV Flag Fixer and other utilities
 # ============================================================================
+
+.set HvpGetFlashBaseAddress, 0x998
+.set XeCryptCopyQwVec, 0x78C
+.set HvxGetVersions, 0x2A58
+.set HV_memcpy, 0xCAE0
+
 MAKEPATCH 0x0000D328
+.set HvFlagFixer, PatchAddr
+.set FixFusesAddr, (PatchAddr + (1f - 0f))
+
+.ifdef jtag_vfuses
+   .set FixHoldAddr, (PatchAddr + (2f - 0f))
+.endif
+
+.set PrintChar, (PatchAddr + (3f - 0f))
+.set HV_PP_Syscall0, (PatchAddr + (5f - 0f))
 0:
 	mflr %r8
 	lhz %r3, 6(0)
 	li %r4, 0x21
 	andc %r3, %r3, %r4
 	sth %r3, 6(0)
-	bla 0x998
+
+	bla HvpGetFlashBaseAddress
 
 .ifdef jtag_vfuses
    # JTAGs use virtual fuses too!
@@ -181,83 +191,96 @@ MAKEPATCH 0x0000D328
 	lis %r3, 1
 	addi %r3, %r3, -0x60
 	li %r5, 0xc
-	bla 0x78c
-	li %r3, 0x21
-	bla 0xd384
-	li %r3, 0xa
-	bla 0xd384
+	bla XeCryptCopyQwVec
+
+	li %r3, '!'
+	bla PrintChar
+
+	li %r3, '\n'
+	bla PrintChar
+
 	mtlr %r8
 	ba 0x19a4
 
+# FixFusesAddr
+1:
 	lis %r3, 1
 	addi %r3, %r3, -0x60
 	blr
 
+.ifdef jtag_vfuses
+# FixHoldAddr
+2:
+   lis %r4, -0x8000
+   sldi %r4, %r4, 0x20
+   oris %r4, %r4, 0x100
+   ori %r4, %r4, 0x3080
+   ba (HV_StartProcPatchAddr + 4)
+.endif
+
+# PrintChar
+3:
 	lis %r4, -0x8000
 	ori %r4, %r4, 0x200
 	sldi %r4, %r4, 0x20
 	oris %r4, %r4, 0xea00
 	slwi %r3, %r3, 0x18
 	stw %r3, 0x1014 (%r4)
+uartwaitloop:
 	lwz %r3, 0x1018 (%r4)
 	rlwinm. %r3, %r3, 0, 6, 6
-	MAKEBEQNOCR 0xd39c
+	beq uartwaitloop
 	blr
 
-	lis %r11, 0x7262
-	ori %r11, %r11, 0x7472
-	cmplw cr6, %r3, %r11
-	MAKEBEQ 0xd3c0
-	ba 0x2a58
-	cmplwi cr6, %r4, 4
-	MAKEBGT 0xd458
-	MAKEBEQ  0xd40c
-	li %r5, 0x1570
-	lis %r6, 0x3880
-	cmplwi cr6, %r4, 2
-	MAKEBNE 0xd3e4
-	ori %r6, %r6, 7
-	MAKEBRANCH 0xd3ec
-	cmplwi cr6, %r4, 3
-	MAKEBNE 0xd404
-	li %r0, 0
-	stw %r6, 0 (%r5)
-	dcbst 0, %r5
-	icbi 0, %r5
-	sync
-	isync
-	li %r3, 1
-	blr
+# Syscall 0 backdoor
+5:
+   lis %r11, 0x7262         # Freeboot syscall key - 0x72627472 "rbtr" 1st half
+   ori %r11, %r11, 0x7472    # 2nd half
+   cmplw cr6, %r3, %r11      # Check for the magic key
+   beq cr6, checkOpType		# Branch to checkOpType at 0xD018 if it matches
+   ba HvxGetVersions 		# Otherwise branch to the real HvxGetVersions (0x2A48)
 
-	mflr %r12
-	std %r12, -8 (%r1)
-	stdu %r1, -0x10 (%r1)
-	mtlr %r5
-	mtctr %r7
-	lwz %r4, 0 (%r6)
-	stw %r4, 0 (%r5)
-	dcbst 0, %r5
-	icbi 0, %r5
-	sync
-	isync
-	addi %r5, %r5, 4
-	addi %r6, %r6, 4
-	MAKEBDNZ 0xd420
-	blr
+checkOpType: # 0xD018
+   cmplwi cr6, %r4, 4             # Check for 4, aka hvxExecute
+   bgt cr6, doMemCpy 	         # >4 must be MemCpy (0xD0B0)
+   beq cr6, hvxExecuteCode 	   # If it matches, must be hvxExecute
+   li %r3, 1
+   blr
 
-	addi %r1, %r1, 0x10
-	ld %r12, -8 (%r1)
-	mtlr %r12
-	blr
+hvxExecuteCode:
+   mflr %r12
+   std %r12, -8(%r1)
+   stdu %r1, -0x10(%r1)
+   mtlr %r5
+   mtctr %r7
 
-	cmplwi cr6, %r4, 5
-	MAKEBNE 0xd470
-	mr %r3, %r6
-	mr %r4, %r5
-	mr %r5, %r7
-	ba 0xcae0
-	li %r3, 2
-	blr
+cpyLoop:
+   lwz %r4, 0(%r6)
+   stw %r4, 0(%r5)
+   dcbst 0, %r5
+   icbi 0, %r5
+   sync
+   isync
+   addi %r5, %r5, 4
+   addi %r6, %r6, 4
+   bdnz cpyLoop
+   blr
+   addi %r1, %r1, 0x10
+   ld %r12, -8(%r1)
+   mtlr %r12
+   blr
+
+doMemCpy:
+   cmplwi cr6, %r4, 5
+   bne cr6, returnTwo
+   mr %r3, %r6
+   mr %r4, %r5
+   mr %r5, %r7
+   ba HV_memcpy
+
+returnTwo:
+   li %r3, 2
+   blr
 9:
 
 # ============================================================================
@@ -265,12 +288,10 @@ MAKEPATCH 0x0000D328
 # ============================================================================
 MAKEPATCH 0x00001CD4
 0:
-	.long 0x0000d3ac
+	.long HV_PP_Syscall0
 9:
 
 .ifdef jtag_vfuses
-.set HV_StartProcPatchAddr, 0xD700
-
 # ============================================================================
 # For JTAGs only, we need to patch HvxStartupProcessors
 #
@@ -278,18 +299,11 @@ MAKEPATCH 0x00001CD4
 # function, the custom function will then branch back to the instruction
 # after what we replaced
 # ============================================================================
+.set HV_StartProcPatchAddr, 0x1C4C
+
 MAKEPATCH HV_StartProcPatchAddr
 0:
-   lis %r4, -0x8000
-   sldi %r4, %r4, 0x20
-   oris %r4, %r4, 0x100
-   ori %r4, %r4, 0x3080
-   ba 0x1C50
-9:
-
-MAKEPATCH 0x1C4C
-0:
-   ba HV_StartProcPatchAddr
+   ba FixHoldAddr
 9:
 .endif
 
@@ -551,19 +565,43 @@ KMAKEPATCH 0x80077804
 	li %r11, 0
 9:
 
-# unnecessary patch in XeKeysConsoleSignatureVerification
-KMAKEPATCH 0x800EE578
-0:
-	li %r3, 1
-	KMAKEBRANCH 0x800EE5A0
-9:
-
 #=============================================================================
 # Patches SataCdRomAP25Initialize to disable E66 error
 #=============================================================================
 MAKEPATCH 0x000902D4
 0:
 	KMAKEBRANCH 0x800902EC
+9:
+
+# ============================================================================
+# HvFixKeys patch for zero fuse consoles
+# ============================================================================
+MAKEPATCH 0x00003434
+0:
+	nop
+9:
+
+MAKEPATCH 0x00000018
+0:
+    .long 0x81300D49
+    .long 0xC232F145
+9:
+
+#============================================================================
+# usbdsec patch by @InvoxiPlayGames that allows for 3rd party Xinput devices
+#============================================================================
+
+# patches UsbdIsDeviceAuthenticated to report all devices as authenticated
+KMAKEPATCH 0x800C7128
+0:
+   li %r3, 1
+   blr
+9:
+
+# patches inside WgcAddDevice to allow for more leniency on the interface descriptor
+KMAKEPATCH 0x800E618C
+0:
+   b 0x4
 9:
 
 # done with patch section
