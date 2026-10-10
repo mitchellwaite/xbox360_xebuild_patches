@@ -487,6 +487,20 @@ MAKEPATCH 0x000042F0
    nop
 9:
 
+# ============================================================================
+# HvFixKeys patch for zero fuse consoles
+# ============================================================================
+MAKEPATCH 0x00003378 # disable copying transform key from SoC
+0:
+	nop
+9:
+
+MAKEPATCH  0x00000018 # pbkey xex2key make transform key 81300D49C232F145
+0:
+	.long 0x81300D49
+	.long 0xC232F145
+9:
+
 #
 # kernel patches :)
 #
