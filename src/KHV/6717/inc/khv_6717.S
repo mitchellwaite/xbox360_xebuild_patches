@@ -439,27 +439,27 @@ MAKEPATCH 0x00003DC8
 0:
    # This section overwrites a check on the return value of XeCryptBnQwBeSigVerify disabling STATUS_IMAGE_CHECKSUM_MISMATCH - C0000221
    cmpldi cr6, %r28, 0   # Value set from %r4 being passed to main function being patched
-   beq cr6, loc_3dfc    # Branch if zero. This is how it's handled by the function normally when XeCryptBnQwBeSigVerify returns non-zero
+   beq cr6, xex_ret_zero    # Branch if zero. This is how it's handled by the function normally when XeCryptBnQwBeSigVerify returns non-zero
 
    cmpwi cr6, %r3, 0     # Check the return value of XeCryptBnQwBeSigVerify performed just before these patches
-   bne cr6, loc_3de4    # Branch when non-zero
+   bne cr6, xex_proc_key    # Branch when non-zero
 
    li %r4, 0xf0          # Address of Devkit XEX2 AES key that has been set to all zero.
-   b loc_3df4
+   b xex_setkey
    nop
 
    # Everything below remains unchanged??? Maybe it's just here to make it easier to create branches when compiling???
-loc_3de4:
+xex_proc_key:
    cmplwi cr6, %r29, 0
    addi %r4, %r31, 0x440
-   bne cr6, loc_3df4
+   bne cr6, xex_setkey
    li %r4, 0x54          # Address of Retail XEX2 AES key - 20 B1 85 A5 9D 28 FD C3 40 58 3F BB 08 96 BF 91
 
-loc_3df4:
+xex_setkey:
    mr %r3, %r28
    MAKEBRANCHL j_XeCryptAesKey
 
-loc_3dfc:
+xex_ret_zero:
    li %r31, 0
 9:
 
