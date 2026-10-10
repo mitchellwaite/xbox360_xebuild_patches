@@ -147,3 +147,46 @@
 		#;Patch structure
  	bl	\DAddress - ((.-0b)+PatchAddr)
 .endm
+
+
+# TODO we don't need these!
+
+.macro MAKEBDNZ DEST
+.if (\DEST)
+    .set  _d,(\DEST)
+    .set  _o,_d - ((.-0b)+PatchAddr)
+    bdnz    _o
+.endif
+.endm
+
+.macro MAKEBNE DEST
+.if (\DEST)
+    .set  _d,(\DEST)
+    .set  _o,_d - ((.-0b)+PatchAddr)
+    bne    cr6,_o
+.endif
+.endm
+
+.macro MAKEBEQNOCR DEST
+.if (\DEST)
+    .set  _d,(\DEST)
+    .set  _o,_d - ((.-0b)+PatchAddr)
+    beq    _o
+.endif
+.endm
+
+.macro MAKEBEQ DEST
+.if (\DEST)
+    .set  _d,(\DEST)
+    .set  _o,_d - ((.-0b)+PatchAddr)
+    beq    cr6,_o
+.endif
+.endm
+
+.macro MAKEBGT DEST
+.if (\DEST)
+    .set  _d,(\DEST)
+    .set  _o,_d - ((.-0b)+PatchAddr)
+    bgt    cr6,_o
+.endif
+.endm

@@ -12,7 +12,7 @@ mkdir output
 REM *** We'll check this flag after each section so we don't try to continue if the kernel/4BL/2BL etc patches are broken
 set buildFailed=0
 
-echo Building kernel patch files...
+echo Building devkit kernel patch files...
 
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_sb
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_flash
@@ -32,6 +32,8 @@ call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_sb
 call:buildPatchSection src\KHV\17700_XDKBuild khv_vfuses_jtag
  
+echo Building retail kernel patch files...
+
 call:buildPatchSection src\KHV\17559 khv_17559_glitch2m
 call:buildPatchSection src\KHV\17559 khv_17559_glitch2
 call:buildPatchSection src\KHV\17559 khv_17559_glitch
@@ -56,6 +58,8 @@ call:buildPatchSection src\KHV\6717 khv_6717_jtag
 call:buildPatchSection src\KHV\6770 khv_6770_vfuses
 call:buildPatchSection src\KHV\6770 khv_6770_jtag
 
+call:buildPatchSection src\KHV\7258 khv_7258_vfuses
+call:buildPatchSection src\KHV\7258 khv_7258_jtag
 
 if %buildFailed% neq 0 (
     echo.
@@ -336,6 +340,12 @@ copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_d
 REM *** this is just a test for my falcon JTAG
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17700_XDKBuild\khv_vfuses_jtag.bin output\17700_XDKBuild\patches_falcon.bin
 
+
+REM ********************************************************
+REM * 17559 FreeBoot patch set
+REM *
+REM * all of them!
+REM ********************************************************
 echo 17559 FreeBoot...
 
 mkdir output\17559
@@ -385,6 +395,18 @@ copy /b src\2BL\13182\cbb_13182_glitch2.bin + src\4BL\12905\cd_12905_vfuses.bin 
 copy /b src\2BL\13182\cbb_13182_glitch2_wb4g.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mcorona_WB4G.bin
 copy /b src\2BL\16128\cbb_16128_vfuses.bin + src\4BL\12905\cd_12905_vfuses.bin + src\KHV\17559\khv_17559_glitch2m.bin output\17559\patches_g2mwinchester.bin 
 
+echo Done!
+
+REM ********************************************************
+REM * 7258 FreeBoot patch set
+REM *
+REM * glitch2m/DevGL/JTAG
+REM ********************************************************
+echo 7258 Beta FreeBoot...
+
+mkdir output\7258
+
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_falcon.bin + src\KHV\7258\khv_7258_jtag.bin output\7258\patches_falcon.bin
 
 echo Done!
 
