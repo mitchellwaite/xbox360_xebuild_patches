@@ -45,3 +45,4 @@ KMAKEPATCH 0x80040430
 	.short KRNL_VER
 	.short 0
 9:
+

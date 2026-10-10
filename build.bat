@@ -53,6 +53,10 @@ call:buildPatchSection src\KHV\1839 khv_1839_vfuses_devkit
 call:buildPatchSection src\KHV\6717 khv_6717_vfuses
 call:buildPatchSection src\KHV\6717 khv_6717_jtag
 
+call:buildPatchSection src\KHV\6770 khv_6770_vfuses
+call:buildPatchSection src\KHV\6770 khv_6770_jtag
+
+
 if %buildFailed% neq 0 (
     echo.
     echo ERROR: One or more KHV patches failed to build.
@@ -409,6 +413,34 @@ copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src
 
 REM *** use CB_B 7378 for elpis
 copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6717\khv_6717_vfuses.bin output\6717\patches_g2mxenon_ELPIS.bin
+
+echo Done!
+
+REM ********************************************************
+REM * 6770 FreeBoot patch set
+REM *
+REM * glitch2m/DevGL/JTAG
+REM ********************************************************
+echo 6770 FreeBoot...
+
+mkdir output\6770
+
+REM *** JTAG phat (xenon/zephyr/falcon/jasper)
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\1940\cbb_1940_jtag.bin + src\4BL\8453\cd_8453_jtag_xenon.bin + src\KHV\6770\khv_6770_jtag.bin output\6770\patches_xenon.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\4579\cbb_4579_jtag.bin + src\4BL\8453\cd_8453_jtag_zephyr.bin + src\KHV\6770\khv_6770_jtag.bin output\6770\patches_zephyr.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_falcon.bin + src\KHV\6770\khv_6770_jtag.bin output\6770\patches_falcon.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\6750\cbb_6750_jtag.bin + src\4BL\8453\cd_8453_jtag_jasper.bin + src\KHV\6770\khv_6770_jtag.bin output\6770\patches_jasper.bin
+
+REM *** glitch2m Falcon/Zephyr/Xenon are all the same patch set
+copy /b src\2BL\5772\cbb_5772_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6770\khv_6770_vfuses.bin output\6770\patches_g2mfalcon.bin
+copy output\6770\patches_g2mfalcon.bin output\6770\patches_g2mzephyr.bin
+copy output\6770\patches_g2mfalcon.bin output\6770\patches_g2mxenon.bin
+
+REM *** Use 6752 for Jasper
+copy /b src\2BL\6752\cbb_6752_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6770\khv_6770_vfuses.bin output\6770\patches_g2mjasper.bin
+
+REM *** use CB_B 7378 for elpis
+copy /b src\2BL\7378\cbb_7378_vfuses.bin + src\4BL\9452\cd_9452_vfuses.bin + src\KHV\6770\khv_6770_vfuses.bin output\6770\patches_g2mxenon_ELPIS.bin
 
 echo Done!
 
