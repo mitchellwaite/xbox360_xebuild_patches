@@ -117,11 +117,6 @@ MAKEPATCH 0x000000F0 # devkit xex key
    .long 0x00000000
 9:
 
-MAKEPATCH 0x00001420
-0:
-   cmplwi %r0, 0x7c
-9:
-
 # ============================================================================
 # Disable memory protection
 #	ExceptionVectorDSI
@@ -131,15 +126,16 @@ MAKEPATCH 0x0000114C
    ba HV_setmemprot
 9:
 
-# ============================================================================
-#	The li %r4, 7 in this is modified by the syscall0 backdoor
-#	to toggle the memory protection state.
-#	ENABLED = 0x38800000 (li %r4, 0) || DISABLED = 0x38800007 (li %r4, 7)
-# ============================================================================
 MAKEPATCH HV_setmemprot
 0:
-   li %r4, 7				# DISABLED by default
-   andc %r1, %r1, %r4
+   li      %r4, 4
+   andc    %r1, %r1, %r4      # Always clear N/no-execute
+
+   andi.   %r4, %r1, 3        # Read PP
+   cmpwi   %r4, 3
+   bne     yolo
+   xori    %r1, %r1, 2        # PP 11 -> 01
+yolo:
    mtspr 0x3b5, %r1
    ba 0x1150
 9:
@@ -267,26 +263,6 @@ checkOpType: # 0xD018
    cmplwi cr6, %r4, 4             # Check for 4, aka hvxExecute
    bgt cr6, doMemCpy 	         # >4 must be MemCpy (0xD0B0)
    beq cr6, hvxExecuteCode 	   # If it matches, must be hvxExecute
-   li %r5, HV_setmemprot 	      # Memory protection function address
-   lis %r6, 0x3880                # Sets %r6 to 0x38800000 - Remains like this if protections are to be ENABLED
-   cmplwi cr6, %r4, 2             # Check for 2 aka set mem protections DISABLED
-   bne cr6, checkforMemProtectOn # If not, branch to check for mem protections ENABLED - 0xd03c
-   ori %r6, %r6, 7                 # Updates %r6 to 0x38800007 - Indicating protections are to be DISABLED
-   b setMemProtections           # Branch to set memory protections setup 0xd044
-
-checkforMemProtectOn:
-   cmplwi cr6, %r4, 3             # Check for 3 aka set mem protections ENABLED
-   bne cr6, returnOne 		      # If not, branch to returnOne to exit 0xD05C
-
-setMemProtections:
-   li %r0, 0
-   stw %r6, 0(%r5)                 # Sets the start of the set mem function based on what was set in %r6 earlier - ENABLED = 0x38800000 (li %r4, 0) || DISABLED = 0x38800007 (li %r4, 7)
-   dcbst 0, %r5
-   icbi 0, %r5
-   sync
-   isync
-
-returnOne:
    li %r3, 1
    blr
 
@@ -622,12 +598,6 @@ KMAKEPATCH 0x800ECBA0
    blr
 9:
 
-KMAKEPATCH 0x800ECBF0
-0:
-   li %r3, 1
-   KMAKEBRANCH(0x800ecc18)
-9:
-
 #=============================================================================
 # Patches XeCryptBnQwBeSigVerify
 #=============================================================================
@@ -749,6 +719,23 @@ KMAKEPATCH XeKeysFreeSpace
 KMAKEPATCH 0x80078008
 0:
    li %r3, 0
+9:
+
+#============================================================================
+# usbdsec patch by @InvoxiPlayGames that allows for 3rd party Xinput devices
+#============================================================================
+
+# patches UsbdIsDeviceAuthenticated to report all devices as authenticated
+KMAKEPATCH 0x800C5950
+0:
+   li %r3, 1
+   blr
+9:
+
+# patches inside WgcAddDevice to allow for more leniency on the interface descriptor
+KMAKEPATCH 0x800E48A4
+0:
+   b 0x4
 9:
 
 .long 0xffffffff
