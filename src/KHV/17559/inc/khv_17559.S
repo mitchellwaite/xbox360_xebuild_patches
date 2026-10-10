@@ -164,33 +164,28 @@ MAKEPATCH 0xF0
 
 # ============================================================================	
 # Disable memory protection
-#	ExceptionVectorDSI
-# hv tlb_rpn set command location       mtspr   SPR_TLB_RPN, sp 
+#
+# These patches modify the common instruction/data storage interrupt handler
+# routines to make all image memory RWX and all heap memory executable. This
+# is an improved version of the old patch which now honors page protections
+# on heap memory allowing this patch to be enabled at all times even when the
+# back compat emulator is running.
+#
+# Thanks to grimdoomer for providing these!
 # ============================================================================
-# 00 00 11 BC 00 00 00 01 48 00 15 4E
-MAKEPATCH 0x11BC
+MAKEPATCH 0x000012D8
 0:
-	ba HV_setmemprot
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
-# ============================================================================
-#	The li %r4, 7 in this is modified by the syscall0 backdoor 
-#	to toggle the memory protection state.
-#	ENABLED = 0x38800000 (li r4, 0) || DISABLED = 0x38800007 (li r4, 7)
-#
-# Notes from the cOz release:
-# - allows code excution anywhere in 0x80000000->0x9FFFFFFF range
-# - allows system thread manipulation of code/read only data without
-#   disabling encryption
-# - 0x0007 clears bits NoExec:DataPage:Readonly of RPN
-# ============================================================================
-# 00 00 15 4C 00 00 00 04 38 80 00 07 7C 21 20 78 7C 35 EB A6 48 00 11 C2
-MAKEPATCH HV_setmemprot
+MAKEPATCH 0x000010E0
 0:
-	li %r4, 7             # DISABLED by default
-	andc %r1, %r1, %r4
-	mtspr 0x3b5, %r1      # .long 0x7C35EBA6
-	ba 0x11c0
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
+9:
+
+MAKEPATCH 0x000010FC
+0:
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
 # ============================================================================
@@ -363,28 +358,6 @@ checkOpType:  # 0xB5A8
 	cmplwi cr6, %r4, 4                # Check for 4 aka hvxExecute
 	bgt cr6, doMemCpy                # If it's greter than 4 it must be MemCpy         
 	beq cr6, hvxExecuteCode          # If it matches then it's hvxExecute
-	li %r5, HV_setmemprot             # Memory protections function address added in an earlier patch
-	lis %r6, 0x3880                   # Sets r6 to 0x38800000 - Remains like this if protections are to be ENABLED
-
-protectOffTest:	
-	cmplwi cr6, %r4, 2                # Check for 2 aka set mem protections DISABLED     
-	bne cr6, checkForMemProtectOn    # If not, branch to check for mem protections ENABLED - 0xb59c
-	ori %r6, %r6, 7                    # Updates r6 to 0x38800007 - Indicating protections are to be DISABLED
-	b setMemProtections              # Branch to set memory protections setup             
-
-checkForMemProtectOn:   
-	cmplwi cr6, %r4, 3                # Check for 3 aka set mem protections ENABLED
-	bne cr6, returnOne               # If not, branch to returnOne to exit - 0xb5bc
-
-setMemProtections:
-	li %r0, 0
-	stw %r6, 0(%r5)                    # Sets the start of the set mem function based on what was set in r6 earlier - ENABLED = 0x38800000 (li r4, 0) || DISABLED = 0x38800007 (li r4, 7)
-	dcbst 0, %r5
-	icbi 0, %r5
-	sync 0
-	isync
-
-returnOne:
 	li %r3, 1
 	blr
 
@@ -658,6 +631,38 @@ MAKEPATCH 0x000304FC
 0:
 	nop
 9:
+
+# ============================================================================
+# HvFixKeys patch for zero fuse consoles
+# ============================================================================
+MAKEPATCH 0x00002DC8 # disable copying transform key from SoC
+0:
+	nop
+9:
+
+MAKEPATCH  0x00000018 # pbkey xex2key make transform key 81300D49C232F145
+0:
+	.long 0x81300D49
+	.long 0xC232F145
+9:
+
+# ============================================================================
+# CoronaKeysFix patch by InvoxiPlayGames
+#
+# This will fix audio playback issues / "the eternal loading bug"
+# in Rock Band and Dance Central games on modded Corona Xbox 360s.
+# ============================================================================
+MAKEPATCH 0x00003B8C
+0:
+	addi %r4, %r31, 0x10
+9:
+
+MAKEPATCH 0x0000611C
+0:
+	addi %r3, %r28, 0x10
+9:
+
+# Kernel patches from here on:
 
 #============================================================================
 # Patches XexpConvertError
@@ -1049,34 +1054,22 @@ KMAKEPATCH 0x80108E70
 	b 0x3134    # 0x8010bfa4
 9:
 
-# ===================================
-# These bits are in the premade RGH3 glitch2m images
-# nointmu and nohdmiwait are enabled by default
-# ===================================
-.ifdef rgh3_patches
+#============================================================================
+# usbdsec patch by @InvoxiPlayGames that allows for 3rd party Xinput devices
+#============================================================================
 
-# nohdmiwait patch
-MAKEPATCH 0x0015BC80
+# patches UsbdIsDeviceAuthenticated to report all devices as authenticated
+KMAKEPATCH 0x800D8748
 0:
-	b 0x4c
+   li %r3, 1
+   blr
 9:
 
-# nointmu patch
-MAKEPATCH 0x0008E098
+# patches inside WgcAddDevice to allow for more leniency on the interface descriptor
+KMAKEPATCH 0x800F98E0
 0:
-	lis %r10, 0x6000
+   b 0x10
 9:
-
-MAKEPATCH 0x000E25A8
-0:
-	lis %r10, 0x6000
-9:
-
-MAKEPATCH 0x0008F3F8
-0:
-	blr
-9:
-.endif
 
 # done with patch section
 
