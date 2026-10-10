@@ -38,8 +38,6 @@ call:buildPatchSection src\KHV\17559 khv_17559_glitch2m
 call:buildPatchSection src\KHV\17559 khv_17559_glitch2
 call:buildPatchSection src\KHV\17559 khv_17559_glitch
 call:buildPatchSection src\KHV\17559 khv_17559_jtag
-
-call:buildPatchSection src\KHV\17559 hddssauth
 call:buildPatchSection src\KHV\17559 e76reboot
 
 call:buildPatchSection src\KHV\1888 khv_1888_vfuses
@@ -60,6 +58,9 @@ call:buildPatchSection src\KHV\6770 khv_6770_jtag
 
 call:buildPatchSection src\KHV\7258 khv_7258_vfuses
 call:buildPatchSection src\KHV\7258 khv_7258_jtag
+
+call:buildPatchSection src\KHV\9199 khv_9199_vfuses
+call:buildPatchSection src\KHV\9199 khv_9199_jtag
 
 if %buildFailed% neq 0 (
     echo.
