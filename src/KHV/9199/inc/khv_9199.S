@@ -6,51 +6,67 @@
 #	Branch to HV flag fix function
 # ============================================================================
 MAKEPATCH 0x000019A0 # init hook
+.set HvFlagFixerDone, (PatchAddr + (9f - 0f))
 0:
-	bla 0xf568
+	bla HvFlagFixer
 9:
+
+.ifdef jtag_vfuses
+# ============================================================================
+# For JTAGs only, we need to patch HvxStartupProcessors
+#
+# The following patch replaces (addis %r4, %r3, -3) with a branch to our custom
+# function, the custom function will then branch back to the instruction
+# after what we replaced
+# ============================================================================
+MAKEPATCH 0x00001C0C
+.set FixHoldAddrDone, (PatchAddr + (9f - 0f))
+0:
+		ba      FixHoldAddr
+9:
+.endif
 
 # ============================================================================
 #   Setup Fuse Row Pointer to point at Virtual Fuses (ikari)
 # ============================================================================
 MAKEPATCH 0x00002078 # vfuse
 0:
-	bla 0xF5B8
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00006BE0 # vfuse
 0:
-	bla 0xF5B8
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00006D50 # vfuse
 0:
-	bla 0xF5B8
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00006E70 # vfuse
 0:
-	bla 0xF5B8
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x000070E0 # vfuse
 0:
-	bla 0xF5B8
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00007230 # vfuse
 0:
-	bla 0xF5B8
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x000072F0 # vfuse
 0:
-	bla 0xF5B8
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x0007590 # vfuse
 0:
-	bla 0xF5B8
+	bla FixFusesAddr
 9:
 
 # ============================================================================
@@ -178,7 +194,6 @@ MAKEPATCH 0x00004AA4 # HvxResolveImports
 
 .set HvpGetFlashBase,0x998	
 .set CopyBy64,0x78C
-.set resumeInit,0x19A4
 
 .set RealHvxGetVersions,0x2030
 .set Hv_setmemprot,0x1570
@@ -205,10 +220,17 @@ MAKEPATCH 0x0000F568
 	sth %r3, 6(%r0) 	 						# 0xF578
 
 	bla HvpGetFlashBase # 0x998					# 0xF57C
+
+.ifdef jtag_vfuses
+   oris %r4, %r3, 9
+   ori %r4, %r4, 0x5000
+.else
 	lwz %r4, 0x64(%r3) 						# 0xF580	# reading/building vfuse addr from flash
 	lwz %r5, 0x70(%r3) 						# 0xF584	# reading/building vfuse addr from flash; flash base + e0000
 	add %r3, %r3, %r4 							# 0xF588 
 	add %r4, %r3, %r5 							# 0xF58C
+.endif
+
 	lis %r3, 1 							# 0xF590
 	addi %r3, %r3, -0x60	 					# 0xF594	
 	li %r5, 0xc 							# 0xF598
@@ -221,7 +243,7 @@ MAKEPATCH 0x0000F568
 
 	# TODO we don't actually do the instruction we replaced with this patch
 
-	ba resumeInit 	# 0x19A4 					# 0xF5B4
+	ba HvFlagFixerDone 	# 0x19A4 					# 0xF5B4
 
 # FixFusesAddr
 1:
