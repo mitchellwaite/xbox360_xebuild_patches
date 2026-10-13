@@ -137,20 +137,27 @@ MAKEPATCH 0x00001420 # unneccesary patch to extend the syscall table
 9:
 
 # ============================================================================
-#   hv tlb_rpn set command location (cOz)
-# TODO: replace this with Brent or Grim's memory protection patch
+# These patches modify the common instruction/data storage interrupt handler
+# routines to make all image memory RWX and all heap memory executable. This
+# is an improved version of the old patch which now honors page protections
+# on heap memory allowing this patch to be enabled at all times even when the
+# back compat emulator is running.
+#
+# Thanks to grimdoomer for providing these!
 # ============================================================================
-MAKEPATCH 0x0000114C 
+MAKEPATCH 0x00001070
 0:
-	ba 0x1570
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
-MAKEPATCH 0x00001570
+MAKEPATCH 0x0000108C
 0:
-	li %r4, 7
-	andc %r1, %r1, %r4
-	mtspr 0x3b5, %r1
-	ba 0x1150
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
+9:
+
+MAKEPATCH 0x00001268
+0:
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
 #============================================================================
@@ -531,6 +538,20 @@ MAKEPATCH 0x00003A48 # HvxCreateImageMapping
 	nop 
 9:
 
+# ============================================================================
+# HvFixKeys patch for zero fuse consoles
+# ============================================================================
+MAKEPATCH 0x00002A04 #   disable copying transform key from SoC
+0:
+	nop
+9:
+
+MAKEPATCH 0x00000018 # pbkey xex2key make transform key 81300D49C232F145
+0:
+    .long 0x81300D49
+    .long 0xC232F145
+9:
+
 
 # Kernel Patches
 
@@ -745,6 +766,23 @@ KMAKEPATCH 0x800F7D50 #  XeKeysConsoleSignatureVerification probably redundant
 0:
 	li %r3, 1
 	KMAKEBRANCH 0x800f7d78
+9:
+
+#============================================================================
+# usbdsec patch by @InvoxiPlayGames that allows for 3rd party Xinput devices
+#============================================================================
+
+# patches UsbdIsDeviceAuthenticated to report all devices as authenticated
+KMAKEPATCH 0x800CF280
+0:
+   li %r3, 1
+   blr
+9:
+
+# patches inside WgcAddDevice to allow for more leniency on the interface descriptor
+KMAKEPATCH 0x800ED7DC
+0:
+   b 0x4
 9:
 
 .long 0xffffffff

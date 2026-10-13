@@ -92,12 +92,14 @@ MAKEPATCH 0x000000F0
 9:
 
 # ============================================================================
-# Disable memory protection
-#	ExceptionVectorDSI
+# These patches modify the common instruction/data storage interrupt handler
+# routines to make all image memory RWX and all heap memory executable. This
+# is an improved version of the old patch which now honors page protections
+# on heap memory allowing this patch to be enabled at all times even when the
+# back compat emulator is running.
+#
+# Thanks to grimdoomer for providing these!
 # ============================================================================
-
-# TODO replace this with Grim or Brent's memory protection patches so we don't need to toggle for xefu
-
 MAKEPATCH 0x00001070
 0:
    andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
