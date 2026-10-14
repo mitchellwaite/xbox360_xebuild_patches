@@ -292,27 +292,7 @@ waitloop:
 checkOpType: 								
 	cmplwi cr6, %r4, 4 						# 0xF600
 	bgt cr6, doMemCpy 	# 0xF698				# 0xF604
-	beq cr6, hvxExecuteCode 	# 0xF64C				# 0xF608
-	li %r5, Hv_setmemprot 	# 0x1570				# 0xF60C
-	lis %r6, 0x3880 							# 0xF610
-	cmplwi cr6, %r4, 2 						# 0xF614
-	bne cr6, checkforMemProtectOn # 0xF624				# 0xF618
-	ori %r6, %r6, 7 							# 0xF61C
-	b setMemProtections   # 0xF62C				# 0xF620
-	
-checkforMemProtectOn: 							
-	cmplwi cr6, %r4, 3 						# 0xF624
-	bne cr6, returnOne 	# 0xF644				# 0xF628
-	
-setMemProtections: 							
-	li %r0, 0 							# 0xF62C
-	stw %r6, 0(%r5) 							# 0xF630
-	dcbst 0, %r5 							# 0xF634
-	icbi 0, %r5 							# 0xF638
-	sync  								# 0xF63C
-	isync  								# 0xF640
-
-returnOne: 								
+	beq cr6, hvxExecuteCode 	# 0xF64C				# 0xF608								
 	li %r3, 1 							# 0xF644
 	blr 								# 0xF648
 
