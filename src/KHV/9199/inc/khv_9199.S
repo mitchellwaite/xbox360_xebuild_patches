@@ -248,8 +248,8 @@ MAKEPATCH 0x0000F568
 	bla PrintChar 							# 0xF5AC
 	mtlr %r8  							# 0xF5B0	
 
-	# TODO we don't actually do the instruction we replaced with this patch
-
+	# do the instruction we replaced with this patch
+	li %r3, 0x0200
 	ba HvFlagFixerDone 	# 0x19A4 					# 0xF5B4
 
 # FixFusesAddr

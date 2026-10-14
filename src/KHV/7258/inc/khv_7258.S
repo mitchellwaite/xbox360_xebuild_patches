@@ -202,6 +202,9 @@ MAKEPATCH 0x0000D328
 	bla PrintChar
 
 	mtlr %r8
+
+	# Do the instruction we patched
+	li %r3, 0x0200
 	ba 0x19a4
 
 # FixFusesAddr

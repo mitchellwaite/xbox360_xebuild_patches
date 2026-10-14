@@ -118,26 +118,27 @@ MAKEPATCH 0x000000F0 # devkit xex key
 9:
 
 # ============================================================================
-# Disable memory protection
-#	ExceptionVectorDSI
+# These patches modify the common instruction/data storage interrupt handler
+# routines to make all image memory RWX and all heap memory executable. This
+# is an improved version of the old patch which now honors page protections
+# on heap memory allowing this patch to be enabled at all times even when the
+# back compat emulator is running.
+#
+# Thanks to grimdoomer for providing these!
 # ============================================================================
-MAKEPATCH 0x0000114C
+MAKEPATCH 0x00001070
 0:
-   ba HV_setmemprot
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
-MAKEPATCH HV_setmemprot
+MAKEPATCH 0x0000108C
 0:
-   li      %r4, 4
-   andc    %r1, %r1, %r4      # Always clear N/no-execute
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
+9:
 
-   andi.   %r4, %r1, 3        # Read PP
-   cmpwi   %r4, 3
-   bne     yolo
-   xori    %r1, %r1, 2        # PP 11 -> 01
-yolo:
-   mtspr 0x3b5, %r1
-   ba 0x1150
+MAKEPATCH 0x00001268
+0:
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
 # ============================================================================
@@ -220,7 +221,8 @@ MAKEPATCH 0x0000CF80
    bl PrintChar
    mtlr %r8
 
-   # Branch back to where we came from 
+   # do the instruction we patched and branch back to where we came from
+   li %r3, 0x0200
    ba resumeInit 	# 0x19A4
 
 PrintChar:
