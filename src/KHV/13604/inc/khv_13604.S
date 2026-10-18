@@ -8,7 +8,7 @@ MAKEPATCH 0x0000189C # init
 
 MAKEPATCH 0x00001E68 # vfuse
 0:
-	bla 0xA4C4
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00001E7C # vfuse
@@ -19,7 +19,7 @@ MAKEPATCH 0x00001E7C # vfuse
 
 MAKEPATCH 0x00008A80 # vfuse
 0:
-	bla 0xA4C4
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00008AB0 # vfuse
@@ -30,7 +30,7 @@ MAKEPATCH 0x00008AB0 # vfuse
 
 MAKEPATCH 0x00008BF0 # vfuse
 0:
-	bla 0xA4C4
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00008C20 # vfuse
@@ -41,7 +41,7 @@ MAKEPATCH 0x00008C20 # vfuse
 
 MAKEPATCH 0x00008D10 # vfuse
 0:
-	bla 0xA4C4
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00008D40 # vfuse
@@ -52,7 +52,7 @@ MAKEPATCH 0x00008D40 # vfuse
 
 MAKEPATCH 0x00008F80 # vfuse
 0:
-	bla 0xA4C4
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00008FB0 # vfuse
@@ -63,7 +63,7 @@ MAKEPATCH 0x00008FB0 # vfuse
 
 MAKEPATCH 0x000090D0 # vfuse
 0:
-	bla 0xA4C4
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x00009100 # vfuse
@@ -74,7 +74,7 @@ MAKEPATCH 0x00009100 # vfuse
 
 MAKEPATCH 0x00009190 # vfuse
 0:
-	bla 0xA4C4
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x000091BC # vfuse
@@ -86,7 +86,7 @@ MAKEPATCH 0x000091BC # vfuse
 
 MAKEPATCH 0x00009430 # vfuse
 0:
-	bla 0xA4C4
+	bla FixFusesAddr
 9:
 
 MAKEPATCH 0x0000945C # vfuse
@@ -96,6 +96,9 @@ MAKEPATCH 0x0000945C # vfuse
 	cmpwi cr6, %r11, 0xc
 9:
 
+#============================================================================
+# pbkey xex2key ensure all zeroes                                            
+#============================================================================
 MAKEPATCH 0x000000F0 # devkit xex key
 0:
 	.long 0x00000000
@@ -104,6 +107,8 @@ MAKEPATCH 0x000000F0 # devkit xex key
 	.long 0x00000000
 9:
 
+# Memory protection patch
+# TODO replace this!
 MAKEPATCH 0x000011BC
 0:
 	ba 0x154c
@@ -117,6 +122,9 @@ MAKEPATCH 0x0000154C
 	ba 0x11c0
 9:
 
+#;============================================================================
+#;   disable LDV check                                                        
+#;============================================================================
 MAKEPATCH 0x00002B04 # machine check
 0:
 	nop
@@ -128,12 +136,20 @@ MAKEPATCH 0x00009520 # HvxLockL2
 	blr
 9:
 
+#============================================================================
+# HvxLoadImageData - ignores return of SHA memdiff (for devkit xex)
+#============================================================================
 MAKEPATCH 0x0002A14C # HvxLoadImageData
 0:
 	nop 
 	nop 
 9:
 
+#============================================================================
+# HvxResolveImports - removes min version check in hv  (0xC0000059)           
+# 00004980 blt     cr6, version_mismatch                                      
+# 0000498C blt     cr6, version_mismatch                                      
+#============================================================================
 MAKEPATCH 0x0002A8C0 # HvxResolveImports
 0:
 	nop 
@@ -143,9 +159,6 @@ MAKEPATCH 0x0002A8CC # HvxResolveImports
 0:
 	nop 
 9:
-
-
-
 
 .set HvpGetFlashBase,0x68C	
 .set CopyBy64,0x484
@@ -163,9 +176,9 @@ MAKEPATCH 0x0000A474
 .endif
 
 .set PrintChar, (PatchAddr + (3f - 0f))
-.set TogglePublicKey, (PatchAddr + (5f - 0f))
+.set Syscall0_Backdoor, (PatchAddr + (5f - 0f))
 0:
-#Copy Fuses
+   # HvFlagFixer
 	mflr %r8
 
 	# Clear flags
@@ -244,7 +257,8 @@ checkOpType:
 	bgt cr6, doMemCpy				
 	beq cr6, hvxExecuteCode 			
 	li %r5, Hv_setmemprot 			
-	lis %r6, 0x3880 								
+	lis %r6, 0x3880
+
 	cmplwi cr6, %r4, 2 							
 	bne cr6, checkforMemProtectOn		
 	ori %r6, %r6, 7 								
@@ -302,87 +316,121 @@ returnTwo:
 	blr 										
 9:
 
-
-MAKEPATCH 0x00015980 # replace syscall0
+#============================================================================
+# patch syscall 0 to jump to hook  
+#============================================================================
+MAKEPATCH 0x00015980
 0:
-	.long 0x0000A4F8
+	.long Syscall0_Backdoor
 9:
 
-
-MAKEPATCH 0x00006250  # HvxSecuritySetDetected
-0:
-	li %r3, 0
-	blr 
-9:
-
-MAKEPATCH 0x000062E0 # HvxSecurityGetDetected
+#;============================================================================
+#; HvxSecuritySetDetected                                                     
+#;============================================================================
+MAKEPATCH 0x00006250
 0:
 	li %r3, 0
 	blr 
 9:
 
-MAKEPATCH 0x00006328 # HvxSecuritySetActivated
+#;============================================================================
+#; HvxSecurityGetDetected                                                     
+#;============================================================================
+MAKEPATCH 0x000062E0
 0:
 	li %r3, 0
 	blr 
 9:
 
-MAKEPATCH 0x00006390 # HvxSecurityGetActivated
+#;============================================================================
+#; HvxSecuritySetActivated                                                    
+#;============================================================================
+MAKEPATCH 0x00006328
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#; HvxSecurityGetActivated                                                    
+#;============================================================================
+MAKEPATCH 0x00006390
+0:
+	li %r3, 0
+	blr 
+9:
+
+#;============================================================================
+#; XeKeysSecuritySetStat                                                      
+#;============================================================================
 MAKEPATCH 0x000063D8 
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#; don't limit what keys can be gotton from hv         search 0x1150010       
+#;============================================================================
 MAKEPATCH 0x00007650 #  HvxKeysRsaPrvCrypt
 0:
 	MAKEBRANCH 0x7680
 9:
-
 
 MAKEPATCH 0x000066C8 # CB check
 0:
 	li %r3, 1
 9:
 
-MAKEPATCH 0x000066D0 # machinecheck
+#;============================================================================
+#;   disable CBA sig validation                                               
+#;============================================================================
+MAKEPATCH 0x000066D0
 0:
 	nop 
 9:
 
-MAKEPATCH 0x00006884 # CD check
+#;============================================================================
+#;   disable CBB hash memcmp                                                  
+#;============================================================================
+MAKEPATCH 0x00006884
 0:
 	li %r3, 0
 9:
 
+#============================================================================
+#   disable machine check on bConsoleType                                    
+#============================================================================
 MAKEPATCH 0x000068D0 # machinecheck
 0:
 	nop
 9:
 
-MAKEPATCH 0x000068E0 # machinecheck
+#============================================================================
+#   disable machine check on bConsoleSequence                                
+#============================================================================
+MAKEPATCH 0x000068E0
 0:
 	nop
 9:
 
-MAKEPATCH 0x00006904 # machinecheck
+#============================================================================
+#   disable machine check on wConsoleSequenceAllow, force console to detect as retail                          
+#============================================================================
+MAKEPATCH 0x00006904
 0:
 	nop 
 	li %r11, 1
 9:	
 
+#;============================================================================
+#; locked memcmp Run GOD Content                                              
+#;============================================================================
 MAKEPATCH 0x00024B98 # HvpCompareXGD2MediaID
 0:
 	li %r3, 1
 	blr 
 9:
-
-
 
 #;============================================================================
 #; Patch signature check and load as retail if invalid (Ant)
@@ -414,16 +462,26 @@ xex_ret_zero:
 	li		%r31, 0			#; original instruction, make sure this lines up
 9:
 
-MAKEPATCH 0x0002BE20 # HvxCreateImageMapping
+#;============================================================================
+#; needed when patching out Revocation Check from xex image header in xam     
+#; HvxCreateImageMapping 0xC8003004                                           
+#;============================================================================
+MAKEPATCH 0x0002BE20
 0:
 	li %r3, 0
 9:
 
+#;============================================================================
+#; HvxCreateImageMapping - Remove XEX Region Check                            
+#;============================================================================
 MAKEPATCH 0x0002C0B8  # HvxCreateImageMapping
 0:
 	nop 
 9:
 
+#;============================================================================
+#; HvxExpansionInstall - if sig check fails pass it anyway, but don't use cpukey crypto
+#;============================================================================
 MAKEPATCH 0x0003089C # HvxInstallExpansion
 0:
 	bne cr6, signedExp
@@ -433,62 +491,97 @@ signedExp:
 	nop 
 9:
 
+#;============================================================================
+#; HvxExpansionInstall do_expansion_install check                             
+#;============================================================================
 MAKEPATCH 0x000304E8 # HvpInstallExpansion
 0:
 	nop 
 9:
 
+#;============================================================================
+#; HvxExpansionInstall do_expansion_install check                             
+#;============================================================================
 MAKEPATCH 0x000304FC # HvpInstallExpansion
 0:
 	nop 
 9:
 
-
-
 # kernel patches
 
-KMAKEPATCH 0x8007AC80 # _XeKeysSecurityConvertError
+#;============================================================================
+#; XexpConvertError - converts revoke all errors into OK              
+#;============================================================================
+KMAKEPATCH 0x8007AC80
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#; XexpLoadXexHeaders - disable min version check, Disable Media Flags Check  
+#;============================================================================
 KMAKEPATCH 0x8007B818 # XexpLoadXexHeaders
 0:
 	li %r3, 1
 9:
 
-KMAKEPATCH 0x8007B928 # XexpLoadXexHeaders
+#============================================================================
+# XexpLoadFile - skip 0xC00000CC (BAD_NETWORK_NAME) error                    
+# bl        RtlImageXexHeaderString                                          
+#============================================================================
+KMAKEPATCH 0x8007B928
 0:
 	li %r3, 0
 9:
 
-KMAKEPATCH 0x8007B990 # XexpLoadFile
+#;============================================================================
+#; XexpLoadFile - skip 0xC000008B (resource not found) error                  
+#; lwz     %r11, 0x4C(%r25) # 0x40000000 bound path flag                      
+#;============================================================================
+KMAKEPATCH 0x8007B990
 0:
 	li %r11, 0
 9:
 
+#;============================================================================
+#; XexpLoadFile - skip 0xC000008B (resource not found) error                  
+#; lwz     %r11, 0x4C(%r25) # 0x20000000 bound device flag                    
+#;============================================================================
 KMAKEPATCH 0x8007B9E0 # XexpLoadFile
 0:
 	li %r11, 0
 9:
 
+#;============================================================================
+#; XexpLoadXexHeaders - 0xC0000059 revision mismatch                          
+#;============================================================================
 KMAKEPATCH 0x8007C850
 0:
 	li %r3, 0
 9:
 
+#;============================================================================
+#; fix sfcxmu corruption issues on jasper bigblock - use 008 or higher for retail
+#; SfcxInspectLargeDataBlock 80091C28 lbz %r23, 7(%r30) #; r23 = kernelresv blocks
+#;============================================================================
 KMAKEPATCH 0x80093F28 # SfcxInspectLargeDataBlock
 0:
 	li %r23, 0x10
 9:
 
+#;============================================================================
+#; SataCdRomAuthenticationExInitialize - disables AuthEx/AP25 on supp. drives 
+#;============================================================================
 KMAKEPATCH 0x800987E0 # SataCdRomAP25Initialize
 0:
 	cmplwi cr6, %r11, 0xff
 9:
 
-KMAKEPATCH 0x800981C4 # SataDiskReadLogoBitmap
+#;============================================================================
+#; prevent E66 with XGD3 on some drives                                       
+#;============================================================================
+KMAKEPATCH 0x800981C4
 0:
 	li %r3, 0
 	nop 
@@ -506,54 +599,81 @@ KMAKEPATCH 0x80106DF0
 	blr 
 9:
 
+#;============================================================================
+#; XeKeysSecurityConvertError										          
+#;============================================================================
 KMAKEPATCH 0x801078E8
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#; XeKeysDvdAuthExConvertError										          
+#;============================================================================
 KMAKEPATCH 0x80107BC8
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#; _XeKeysRevokeIsValid                                                       
+#;============================================================================
 KMAKEPATCH 0x80108090
 0:
 	li %r3, 1
 	blr 
 9:
 
+#;============================================================================
+#; _XeKeysRevokeIsRevoked (for dynamicUpdate)      **1**                      
+#;============================================================================
 KMAKEPATCH 0x80108248
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#;  XeKeysRevokeIsRevoked                                                     
+#;============================================================================
 KMAKEPATCH 0x80108298
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#; XeKeysRevokeIsDeviceRevoked - usb device revocation (natal needs)          
+#;============================================================================
 KMAKEPATCH 0x801083D8
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#; XeKeysRevokeConvertError - converts revoke all errors into OK              
+#;============================================================================
 KMAKEPATCH 0x80108558
 0:
 	li %r3, 0
 	blr 
 9:
 
+#;============================================================================
+#; XeCryptBnQwBeSigVerify needed for LIVE/PIRS execution                      
+#;============================================================================
 KMAKEPATCH 0x8010D980
 0:
 	li %r3, 1
 	blr 
 9:
 
+#;============================================================================
+#; mid XeKeysConsoleSignatureVerification - skip sig check                    
+#;============================================================================
 KMAKEPATCH 0x80109040
 0:
 	li %r3, 1
