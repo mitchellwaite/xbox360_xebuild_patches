@@ -107,19 +107,30 @@ MAKEPATCH 0x000000F0 # devkit xex key
 	.long 0x00000000
 9:
 
-# Memory protection patch
-# TODO replace this!
-MAKEPATCH 0x000011BC
+# ============================================================================
+# These patches modify the common instruction/data storage interrupt handler
+# routines to make all image memory RWX and all heap memory executable. This
+# is an improved version of the old patch which now honors page protections
+# on heap memory allowing this patch to be enabled at all times even when the
+# back compat emulator is running.
+#
+# They replace the three clrlwi r4, r4, 28 instructions in the HV
+#
+# Thanks to grimdoomer for providing these!
+# ============================================================================
+MAKEPATCH 0x000010E0
 0:
-	ba 0x154c
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
-MAKEPATCH 0x0000154C
+MAKEPATCH 0x000010FC
 0:
-	li %r4, 7
-	andc %r1, %r1, %r4
-	mtspr 0x3b5, %r1
-	ba 0x11c0
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
+9:
+
+MAKEPATCH 0x000012D8
+0:
+   andi.    %r4, %r4, 0xA        # PTE & (V-D-) = clear NoExecute and ReadOnly
 9:
 
 #;============================================================================
@@ -255,28 +266,7 @@ uartwaitloop:
 checkOpType: 									
 	cmplwi cr6, %r4, 4 							
 	bgt cr6, doMemCpy				
-	beq cr6, hvxExecuteCode 			
-	li %r5, Hv_setmemprot 			
-	lis %r6, 0x3880
-
-	cmplwi cr6, %r4, 2 							
-	bne cr6, checkforMemProtectOn		
-	ori %r6, %r6, 7 								
-	b setMemProtections		
-			
-checkforMemProtectOn: 							
-	cmplwi cr6, %r4, 3 							
-	bne cr6, returnOne 			
-			
-setMemProtections: 							
-	li %r0, 0 									
-	stw %r6, 0(%r5) 								
-	dcbst 0, %r5 								
-	icbi 0, %r5 									
-	sync  										
-	isync  										
-			
-returnOne: 									 
+	beq cr6, hvxExecuteCode
 	li %r3, 1 									
 	blr 										
 			
@@ -505,6 +495,20 @@ MAKEPATCH 0x000304E8 # HvpInstallExpansion
 MAKEPATCH 0x000304FC # HvpInstallExpansion
 0:
 	nop 
+9:
+
+# ============================================================================
+# HvFixKeys patch for zero fuse consoles
+# ============================================================================
+MAKEPATCH 0x000027BC #   disable copying transform key from SoC
+0:
+	nop
+9:
+
+MAKEPATCH 0x00000018 # pbkey xex2key make transform key 81300D49C232F145
+0:
+    .long 0x81300D49
+    .long 0xC232F145
 9:
 
 # kernel patches
@@ -756,6 +760,23 @@ loadmod:
 MAKEPATCH XamLoadedHook	#; NOTE this one is not kpatch
 0:
 	MAKEBRANCHL HookDest
+9:
+
+#============================================================================
+# usbdsec patch by @InvoxiPlayGames that allows for 3rd party Xinput devices
+#============================================================================
+
+# patches UsbdIsDeviceAuthenticated to report all devices as authenticated
+KMAKEPATCH 0x800D8A78
+0:
+   li %r3, 1
+   blr
+9:
+
+# patches inside WgcAddDevice to allow for more leniency on the interface descriptor
+KMAKEPATCH 0x800F75D0
+0:
+   b 0x10
 9:
 
 .long 0xffffffff
