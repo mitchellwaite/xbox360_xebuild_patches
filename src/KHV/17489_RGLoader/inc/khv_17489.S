@@ -1,5 +1,4 @@
 .include "macros.S"
-.set rgloader, 1
 
 #============================================================================
 #   Patches for Hypervisor 21256.18_17489
@@ -439,7 +438,6 @@ MAKEPATCH FixFusesAddr
 # Additional patches for RGLoader
 # Based on the patch set in https://github.com/GoobyCorp/Xbox-360-Crypto/tree/master/Patches/RGL/17559-dev
 #
-.ifdef rgloader
 
 # ============================================================================
 # Retail XEX2 AES key
@@ -1103,7 +1101,18 @@ KMAKEPATCH ldBranchAddr
 	blr
 9:
 
-.endif
+#============================================================================
+# PREVENT ATTEMPTS TO LOAD XBDM FROM HDD ROOT
+#
+# XexpLoadDirsSystem is a priority ordered list of paths to load a module
+# XexpLoadDirHddRoot is first so we can just replace that with the last one
+# XexpLoadDirSystemRoot to force it to use the xdbm from flash
+# xbdm is loaded before our system module so we can undo this patch on load.
+#============================================================================
+KMAKEPATCH 0x801D0824
+0:                                      
+	.long 0x80041B70
+9:
 
 #============================================================================
       .long 0xFFFFFFFF
