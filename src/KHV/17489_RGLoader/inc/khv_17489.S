@@ -819,11 +819,15 @@ MAKEPATCH 0x00010D08
 	b 0x5C
 9:
 
+.ifdef someone_complains
 # ============================================================================
 #	Set KdpRetryCount and KdNetRetryCount to 1
 #      (faster boot speed due to smaller kd timeout)
+#
+# This is ifdef'ed out because someone in #coding-corner asked nicely if we
+# could restore the stock kdnet timeout. Might cause the box to take a little
+# longer to boot but yolo if someone complains i can come up with a switch
 # ============================================================================
-
 .set  KdpRetryCount,    0x801DD80C   #default value is 5
 .set  KdNetRetryCount,  0x801DD81C   #default value is 3
 
@@ -836,6 +840,7 @@ MAKEPATCH 0x00010D08
 0:
 	.long 0x00000001  #patch to 1 retry
 9:
+.endif
 
 # ============================================================================
 #	Remove fcrt.bin hash check
