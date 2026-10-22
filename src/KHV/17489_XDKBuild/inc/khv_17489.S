@@ -332,6 +332,30 @@ MAKEPATCH 0xC60
 .endif
 
 #============================================================================
+# usbdsec patch by @InvoxiPlayGames that allows for 3rd party Xinput devices
+#
+# Note: the devkit kernel version of this patch has an extra nop
+#============================================================================
+# patches UsbdIsDeviceAuthenticated to report all devices as authenticated
+KMAKEPATCH 0x801051B8
+0:
+   li %r3, 1
+   blr
+9:
+
+# patches inside WgcAddDevice to allow for more leniency on the interface descriptor
+KMAKEPATCH 0x801341F4
+0:
+   b 0x10
+9:
+
+# Patches a breakpoint that locks up the machine in WgcBindToUser
+KMAKEPATCH 0x801331F0
+0:
+   nop
+9:
+
+#============================================================================
       .long 0xFFFFFFFF
       .end
 #============================================================================
