@@ -6,6 +6,17 @@ MAKEPATCH 0x0000189C # init
 	bla HvFlagFixer
 9:
 
+.ifdef jtag_vfuses
+#;============================================================================
+#;   Change Thread Hold Address      addis   %r4, %r3, -3                     
+#;============================================================================
+MAKEPATCH 0x00000C60
+.set FixHoldAddrDone, (PatchAddr + (9f - 0f))
+0:
+	ba      FixHoldAddr
+9:
+.endif
+
 MAKEPATCH 0x00001E68 # vfuse
 0:
 	bla FixFusesAddr
