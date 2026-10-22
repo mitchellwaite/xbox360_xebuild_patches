@@ -66,6 +66,10 @@ call:buildPatchSection src\KHV\13604 khv_13604_vfuses
 call:buildPatchSection src\KHV\13604 khv_13604_jtag
 call:buildPatchSection src\KHV\13604 nointmu
 
+call:buildPatchSection src\KHV\15574 khv_15574_vfuses
+call:buildPatchSection src\KHV\15574 khv_15574_jtag
+call:buildPatchSection src\KHV\15574 nointmu
+
 if %buildFailed% neq 0 (
     echo.
     echo ERROR: One or more KHV patches failed to build.
