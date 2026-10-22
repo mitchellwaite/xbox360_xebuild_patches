@@ -16,15 +16,15 @@ MAKEPATCH 0x00000C60
 9:
 .endif
 
+#============================================================================
+#   Setup Fuse Row Pointer to point at Virtual Fuses                         
+#   Change Increment and Range Check of Fuse Row Pointer                     
+#============================================================================
 MAKEPATCH 0x00001E78 # vfuse
 0:
 	bla FixFusesAddr
 9:
 
-#============================================================================
-#   Setup Fuse Row Pointer to point at Virtual Fuses                         
-#   Change Increment and Range Check of Fuse Row Pointer                     
-#============================================================================
 MAKEPATCH 0x00001E8C # vfuse
 0:
 	addi %r11, %r11, 1
@@ -194,24 +194,39 @@ MAKEPATCH 0x0000ADEC
 
 0:
 	mflr    %r8											# 0xADEC
+
+	# Clear flags
 	lhz     %r3, 6(0)									# 0xADF0
 	li      %r4, 0x21									# 0xADF4
 	andc    %r3, %r3, %r4									# 0xADF8
 	sth     %r3, 6(0)									# 0xADFC
+
 	bla     0x68c    # HvpGetFlashBase					# 0xAE00
-	lwz     %r4, 0x64(%r3)								# 0xAE04
-	lwz     %r5, 0x70(%r3)								# 0xAE08
-	add     %r3, %r3, %r4									# 0xAE0C
-	add     %r4, %r3, %r5									# 0xAE10
+
+# JTAGs always store their vfuses at 0x95000
+.ifdef jtag_vfuses
+   oris %r4, %r3, 9
+   ori %r4, %r4, 0x5000
+.else
+	lwz %r4, 0x64(%r3) 							
+	lwz %r5, 0x70(%r3) 							
+	add %r3, %r3, %r4 								
+	add %r4, %r3, %r5 								
+.endif
+
+	# Copy the vfuses
 	lis     %r3, 1										# 0xAE14
 	addi    %r3, %r3, -0x60								# 0xAE18
 	li      %r5, 0xc										# 0xAE1C
 	bla     0x484    # CopyBy64							# 0xAE20
-	li      %r3, 0x21									# 0xAE24
-	bla     0xAE48										# 0xAE28
-	li      %r3, 0xA										# 0xAE2C
-	bla     0xAE48										# 0xAE30
+
+	li      %r3, '!'								# 0xAE24
+	bla     PrintChar										# 0xAE28
+	li      %r3, '\n'										# 0xAE2C
+	bla     PrintChar										# 0xAE30
 	mtlr    %r8											# 0xAE34
+
+	# We patched a bl to a function, branch to that function now
 	ba      0x2d8    # resume init sequence				# 0xAE38
 
 # FixFusesAddr
