@@ -541,6 +541,22 @@ MAKEPATCH 0x00000018 # pbkey xex2key make transform key 81300D49C232F145
     .long 0xC232F145
 9:
 
+# ============================================================================
+# CoronaKeysFix patch by InvoxiPlayGames
+#
+# This will fix audio playback issues / "the eternal loading bug"
+# in Rock Band and Dance Central games on modded Corona Xbox 360s.
+# ============================================================================
+MAKEPATCH 0x00003544
+0:
+	addi %r4, %r31, 0x10
+9:
+
+MAKEPATCH 0x00005AE4
+0:
+	addi %r3, %r28, 0x10
+9:
+
 # Kernel patches from here on
 
 #============================================================================
