@@ -3,3 +3,4 @@
 **/__pycache__/
 src/**/*.bin
 src/**/*.rglp
+/tools/xex1_tests

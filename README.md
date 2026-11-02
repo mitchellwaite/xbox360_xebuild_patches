@@ -61,6 +61,10 @@ Unless otherwise noted, DevGL and Glitch2m patch sets use the same patch sets. C
 - Kernel: 1888
 - Notes: GPU patches are different for each console type. Zephyr with Y1 should create a xenon image. Boards with a Zeus or Kronos should create a jasper image.
 
+### XEX1 Support (17489)
+
+`src/KHV/17489_RGLoader/inc/xex1_17489.S` lets the 17489 RGLoader kernel load XEX1 executables from devkit builds like 1838, by converting their headers to XEX2 in memory as they're loaded. To build it, add `.set xex1, 1` to one of the `khv_vfuses_*.S` files in `17489_RGLoader`. It also stops the HV checking image hashes, as XEX1 needs that. Look at the top of that file for how it works, its limitations and the addresses to change when retargeting it to another kernel, and at `notes/Xex1Support.md` for everything learned getting it working.
+
 ### USB Device Patch
 
 Look under `include/usbdsec.S`, it contains a version of the usbdsec patch (i.e. what you select in JRunner to allow 3rd party Xinput devices) that works with 17559, 17489, and 1888 among others.

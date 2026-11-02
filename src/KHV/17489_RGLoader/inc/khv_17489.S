@@ -1154,6 +1154,35 @@ KMAKEPATCH 0x801331F0
 9:
 
 #============================================================================
+# XEX1 support, for running executables from devkit build 1838
+#============================================================================
+.ifdef xex1
+.include "xex1_17489.S"
+
+# The hook at 0xB208 turns imports older than the exporter's minimum version into
+# li r3, 0. The kernel's minimum is 2.0.1861.0, so that's every import in an XEX1.
+# That's the only case it stubs, so with this the hook just writes the thunk.
+MAKEPATCH 0x0000B224
+0:
+	b 0x8
+9:
+
+# A converted XEX1 fails the signature check at 0x29C14, and the retail decryption
+# patches above then give it the retail key, but XEX1s use the zero key. Those
+# patches also leave the second signature check here unused, so its space can go to
+# sending anything with the XEX1 marker to the zero key at 0x29C84.
+MAKEPATCH 0x00029C20
+0:
+	lwz     %r11, 0(%r31)
+	lis     %r10, XEX_MAGIC_HI
+	ori     %r10, %r10, XEX_MAGIC_XEX1
+	cmplw   cr6, %r11, %r10
+	beq     cr6, 0x54
+	b       0x28
+9:
+.endif
+
+#============================================================================
       .long 0xFFFFFFFF
       .end
 #============================================================================
