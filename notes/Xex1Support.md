@@ -12,16 +12,31 @@ To build it, add `.set xex1, 1` to a `khv_vfuses_*.S` file in `17489_RGLoader`. 
 | - | - |
 | Dolphin, RGLoader `khv_vfuses_sb.S` with `xex1` set, Falcon | Works on hardware |
 | Quitting back to xshell | Clean, seen on hardware |
-| The other XEX1 samples (62 unique header sets) | Headers and page descriptors pass in emulation only, never run on hardware |
+| The other XEX1 samples (62 unique header sets) | Headers and page descriptors pass in emulation. Only the ones under [Tested titles](#tested-titles) have run on hardware |
 | RGLoader `flash` and `jtag` with `xex1` set | Assemble, not tested |
 | Perfect Dark Zero prototype, `PDZ_toplay.exe`, RGLoader with `xex1` set | Works on hardware, played with no problems seen, and audio seemed fine, see [below](#perfect-dark-zero-prototype) |
 | Perfect Dark Zero prototype, `PDZ_totest.exe` | Not tried on hardware |
+| Project Gotham Racing 3, `Gotham3_R.exe`, RGLoader with `xex1` set | Works on hardware, with or without a debugger, see [below](#project-gotham-racing-3-beta) |
 
 Setting `xex1` changes behaviour for XEX2 too:
 
 - `HvxLoadImageData` no longer checks image hashes, for anything.
 
 RGLoader already skips the old import check, and patches out the kernel's signature and header hash checks (`0xA0994` and `0xA09F0`), with or without `xex1`.
+
+## Tested titles
+
+XEX1 titles run on hardware, on RGLoader 17489 with `xex1` set, on a Falcon. "Works" means the title seemed to work fine when played, so it isn't a full test of each one.
+
+| Title | File | Result | Build tested on |
+| - | - | - | - |
+| Project Gotham Racing 3 beta | `Gotham3_R.exe` | Works, apart from the [showroom crash](#project-gotham-racing-3-beta), which is a bug in the beta's own files | Ordinal remap. The full race and no-debugger run were on the 1838-only gate, and it reached the start screen on the wider gate |
+| Marble Blast Ultra beta | `XenonTSE.exe` | Works | Ordinal remap, wider gate |
+| Dolphin (XDK sample) | `Dolphin.exe` | Works | Ordinal remap, wider gate |
+| LightShafts (XDK sample) | `LightShafts.exe` | Works | Ordinal remap, wider gate |
+| Perfect Dark Zero prototype | `PDZ_toplay.exe` | [Works](#perfect-dark-zero-prototype) | Before the ordinal remap, not retested. It imports ordinal 457 and the moved content calls, so it now behaves differently |
+
+All four titles on the wider gate were run with WinDbg attached, and the log shows no assertions or access violations from them, other than the PGR3 showroom crash.
 
 ## What it took
 
@@ -34,6 +49,7 @@ Each of these is a separate problem. Fixing one only uncovered the next, so a ti
 | 3 | Crash at `00000000` | RGLoader stubs every old function import with `li r3, 0` | `b 0x8` at `0xB224` |
 | 4 | Black screen, title running fine | `VdSetDisplayMode` flag `0x40000000` means something else on 17489 | `Xex1DisplayFlagGate` |
 | 5 | `C000007B` from `HvxResolveImports`, encrypted titles only | The HV decrypts the image key with the retail key, so the image is garbage | Marker check at `0x29C20` |
+| 6 | Assertion `c0000420` in xam, then a lock-up | xam ordinals moved after 1838, so imports resolve to the wrong function | `xex1RemapOrdinal` at `0x2ADC4` |
 
 ## Format differences
 
@@ -92,6 +108,45 @@ XEX2 imports are never below the minimum, so this never fires for them. For XEX1
 
 `r11` still held the module handle from the code before the call, so the jump went to `0x30000EC8 + 0x3530 = 0x300043F8`, which is `looP` fill in pool memory. The crash at `00000000` that showed up in the debugger was a second fault. The first one was handled, and while running the exception handler, execution ended up in the middle of `__restgprlr`, which loaded `LR` as 0 and returned to it. `.cxr` on the context record from the stack (`7001eb00`) is what showed the real fault.
 
+## xam ordinals
+
+xam's exports were reshuffled after 1838, and nothing fails at load because the moved ordinals still exist. `Gotham3_R.exe` stopped here:
+
+```
+Assertion failure - code c0000420 (first chance)
+8178e6d8 0fe00019 twi 31,r0,25
+```
+
+Ordinal 457 was `XamCustomSetBannerImage` on 1838. On 17489 it's `XamGetDefaultImage`, which traps when its first argument is 3 or more, and the game passes a texture pointer. Entering `gh` got past it, and the game carried on to the start screen. Without a debugger the console locked up, and with the remap it no longer does. The same import with a null texture calls it with `r3=0, r4=0`, which would write through a null pointer instead.
+
+Comparing 1838's `xamd` exports, named with its PDB, against 17489's found 71 moved ordinals, and functions that are gone. Six of the moved ones are PGR3 imports: `XamContentDelete`, `XamContentCreateEnumerator`, `XamCreateEnumeratorHandle`, `XamGetPrivateEnumStructureFromHandle`, `XamEnumerate` and `XamContentGetDeviceState`.
+
+`xex1RemapOrdinal` in `xex1_17489.S` fixes the index into the export table in `HvxResolveImports`. It leaves `r26` alone, because the thunk's second word gets checked against it afterwards. It only acts on xam tables with a 2.0 version older than 1861, which is where XEX2 starts, so it doesn't affect XEX2 and doesn't need the marker. The table is from 1838. 1839's xam has the same exports at the same ordinals going by the code (658 of 662 functions start the same, and the other 4 aren't moved anywhere). Every XEX1 surveyed imports xam at 1838 or 1839. The code and table are at `0xB500` in the HV.
+
+| 1838 ordinals | What happens to them |
+| - | - |
+| 70 moved | Sent to the new ordinal, from the table |
+| 450, 456, 457, 460, 462 | Removed, and the ordinal is now something unrelated. Sent to 1109, which is `li r3, 0; blr` |
+| 427 | Left alone. Several functions share its address in the 1838 PDB, so the name is ambiguous |
+| 420-426, 428, 535, 539, 974 | Left alone. Same ordinal under a new name, going by the names only |
+| 672, 675-677 | Left alone. These have no 17489 export. Only `updater.xex` imports any of them |
+| 1105-1107 | Left alone. No surveyed XEX1 imports them |
+
+Things to keep in mind:
+
+- **Only names were compared.** A function with the same name could still have different arguments.
+- **`xex1tool -i` shows 1838 names for these ordinals.** They all matched the PDB for PGR3's imports, so a modern table is what's misleading here. For 17489, use `symsrv_17489\xamd.dll\55EFF5E6850200`, which has the trap at the same address as the running xam.
+- **`XexGetProcedureAddress` isn't covered,** only imports.
+- **`xex1tool` can't open a path with a comma in it.** It prints `Error opening XEX file`. Copy the file somewhere else first.
+
+An audit of all 35 unique XEX1s found at 1838 (the recovery's `N` folder, the earlier scan, PGR3 and both PDZ builds), covering 459 xam, 426 kernel and 37 xbdm ordinals, by name after the remap:
+
+- **xam:** every import reaches the 1838 function by name, except the removed functions sent to the stub, renames at the same ordinal, and `updater.xex`'s three missing ordinals. Both PDZ builds import 457 and the content calls too, so they get the remap as well.
+- **Kernel:** only ordinals 38 (`HalRegisterShutdownNotification`, now `HalRegisterPowerDownNotification`, imported by xam and xbdm only) and 479 (`VdVerifyMEInitCommand`, a known stub) differ among what's imported. In the full export table, 66, 413, 586 and 592 also differ, but nothing surveyed imports them. 592 (`XeKeysHmacMd5UsingKey`) is now `XeKeysSaveBootLoaderEx`, so a title that did import it would be calling something dangerous.
+- **xbdm:** every import has the same name. The 17489 side used `xbdm.dll` `52292916c4000` from the SDK, as the build in `symsrv_17489` (`55EFF880c4000`) isn't on disk.
+
+`remap_test.py` runs the real hook. [Project Gotham Racing 3](#project-gotham-racing-3-beta) has the result on hardware.
+
 ## The black screen
 
 Dolphin's 1838 D3D passes `0x40000000` to `VdSetDisplayMode`. The two kernels do different things with it:
@@ -112,7 +167,7 @@ The gate only ignores the flag when the running title's SecurityInfo has the `XE
 These were all checked, and were ruled out as causes:
 
 - Kernel export module number `0x45DC17E0` is the same in 1838, 1888 and 17489.
-- xam's `0xFCA15C76` is the same in 6717, 12611 and the XEX1 imports. 17489's own xam wasn't available to check.
+- xam's `0xFCA15C76` is the same in 6717, 12611 and the XEX1 imports. 17489's own xam wasn't checked for this. PGR3's xam imports do resolve on it.
 - Kernel export minimum version is 1861 on both 1888 and 17489. 1838's is 1800.
 - Dolphin's 92 kernel imports resolve to the expected 17489 functions. `VdVerifyMEInitCommand` is a stub on 17489, which Dolphin doesn't seem to mind.
 - `KeDebugMonitorData+0x18`, thread ID at `KTHREAD+0x14C`, and `__C_specific_handler` (same instructions in both, apart from call targets).
@@ -130,6 +185,8 @@ All of these are in one block at the top of `xex1_17489.S`, apart from the RGLoa
 | `XexpLoadFile_LoadImageData` | `0x800A3764` | `bl HvxLoadImageData` |
 | `VdSetDisplayMode_Flag` | `0x800F77C4` | `rlwinm. r11, r26, 0, 1, 1` |
 | `HV_LoadImageData_HashCheck` | `0x0002A578` | `bne cr6` |
+| `HV_ResolveImports_Index` | `0x0002ADC4` | `slwi r11, r11, 2` |
+| `Xex1HvCave` | `0x0000B500` | Empty, free until `0xC000` |
 | `Xex1Cave` | `0x801C1900` | Empty, `0x26C` bytes free |
 | RGLoader `0xB224` | `0x0000B224` | `bge cr6, 0x8` (RGLoader's own code) |
 | `RtlImageXexHeaderField` | `0x800B3530` | |
@@ -185,7 +242,7 @@ There are 39 loose `XEX-` files, all from early dumps.
 
 ## Debugging more complex XEX1 titles
 
-Dolphin is one of the simplest titles there is. It and the [Perfect Dark Zero prototype](#perfect-dark-zero-prototype) are the only ones that have been run so far. This is how I'd take on the others. The test order and imports come from `tools/xex1_tests/triage.py`. None of the titles in the list have been run yet, so what each will need is only a guess.
+Dolphin is one of the simplest titles there is. [Tested titles](#tested-titles) lists the ones that have been run so far. This is how I'd take on the others. The test order and imports come from `tools/xex1_tests/triage.py`. Apart from `LightShafts`, none of the titles in the list have been run yet, so what each will need is only a guess.
 
 ### Don't run these
 
@@ -250,8 +307,55 @@ The checks above read the file with the right key, so they couldn't catch this. 
 Not checked, and could still matter for `PDZ_totest.exe`:
 
 - **xbdm:** `PDZ_toplay.exe` loading shows its module number matches on 17489. `PDZ_totest.exe` has more xbdm imports, with ordinals up to 89.
-- **xam:** ordinals go up to 985, and these haven't been compared with 17489's xam. A missing one gives a jump to nowhere, as RGLoader NOPs that check, so it wouldn't show until it's called.
+- **xam:** ordinals go up to 985. [xam ordinals](#xam-ordinals) covers the ones that moved, but this title's imports haven't been compared by name. A missing one gives a jump to nowhere, as RGLoader NOPs that check, so it wouldn't show until it's called.
 - **Runtime:** this is an August 2005 game, so it's going to use a lot more than Dolphin does. See [Likely trouble spots](#likely-trouble-spots). `vince.ini` has it logging and uploading to a Microsoft server, which might matter if it blocks waiting on the network.
+
+### Project Gotham Racing 3 beta
+
+`Gotham3_R.exe`, a beta build that imports xam, xbdm and the kernel at 2.0.1838. It's the second real game tried, and it works on RGLoader with `xex1` set. It's glitchy in general, which is expected for a beta and hasn't been looked into.
+
+It loaded with the existing patch, then locked up during startup. One fix was needed, and it applies to every 1838 XEX1 rather than just this game:
+
+| | |
+| - | - |
+| Symptom | Console locks up after `UIFrontendRouteMap::Init`. With WinDbg attached, it stops on assertion `c0000420` at `xam+0x19E6D8` (`8178e6d8`) |
+| Cause | xam ordinals moved after 1838. The game's banner call, ordinal 457, lands in `XamGetDefaultImage`, which traps on the texture pointer it's given |
+| Other imports affected | Six more of its imports went to the wrong function, all content or enumeration calls |
+| Fix | `xex1RemapOrdinal` at `0x2ADC4` in `HvxResolveImports`, with a table of 75 ordinals at `0xB500`. See [xam ordinals](#xam-ordinals) |
+| Scope | Only xam import tables older than 2.0.1861, so not XEX2 |
+| Test | `remap_test.py` |
+
+Result on hardware, with WinDbg attached and the fix flashed (at that point the gate was 1838 only. It's since been widened to anything older than 1861, and that build also reaches the start screen with no assertion):
+
+- The assertion is gone, and the log has no assertions, access violations or break instructions after the initial connection.
+- It went through profile selection, the menus and a full race to the results screen, then back to the frontend, and quit cleanly.
+- It wrote a replay to `SAVE:\Replays` during that session. Nothing was confirmed about loading it back.
+
+It also runs fine with no debugger attached, where it used to lock up.
+
+Not checked:
+
+- **Other saves and content calls,** past what that one session used.
+
+One crash seen after the start screen, on the build with the wider gate, when choosing the showroom from the menu (`Showroom\1000.lua`). This is a mismatch in the beta's own files, not something the patch caused:
+
+1. The script fails with ``attempt to call field `SetTeamColour' (a nil value)`` at line 417. The showroom scripts in `cache\Resource\UI\Scripts\Screens\Showroom` call that function, and the string doesn't appear anywhere in the decrypted `Gotham3_R.exe`, so the scripts expect something this exe doesn't have. The game's assert fires in `luaD_throw`.
+2. `CarModelDX9::CreateRendererStrip` logs errors as cars load, then `Attempting to Close XHV engine.` is logged, then the assert `m_list.Size() == N`, in `Ut::StaticPool<class GVRace,200>::~StaticPool`. Going by the order of events, the Lua assert seems to start the shutdown, but that part wasn't traced.
+3. Second chance access violation at `821e8430`, reading `0x70050000`, just past the top of the stack. That loop scans a text string for a closing `~`, with no check for the end of the string. The buffer at `r30` holds ` GVRace,200>::~StaticPool`, so the game is drawing the assert's own text, and takes the `~` for a formatting tag. This hides the assert, it isn't the cause.
+
+`.restart /f` doesn't get past this, it just reports the same fault again. It needs a reboot.
+
+Log messages seen in that session which didn't stop the game:
+
+- `Garage_01.vs2` and `TestTrack_frontend_maps.dat` can't be opened, and `Race.dat` can't either. `Garage_01.vs2` isn't in this copy of the game.
+- `xstudio.xex` fails with `C0000102` at boot, and `Xam.Community.xex`, `Xam.DataCenterAgent.xex` and `cert.xex` fail to load. These happen before the title starts.
+
+Debugging notes from this one:
+
+- `gh` gets past the assertion, if you need to look at what comes after it.
+- `sxe -c "..." asrt` dumps state on assertions, which `sxd -c2 ... av` doesn't catch.
+- WinDbg started with `-b` stopped the console booting twice, with the log ending at `Connected to target 169.254.x.x ... on local IP 0.0.0.0`. The same flags worked on other boots, so the cause isn't certain, but `-b` makes the kernel wait for the debugger and the console's early link-local address may not be able to answer. Starting without `-b`, then `Ctrl+Break` and a script that runs `.logopen`, worked.
+- WinDbg reports the kernel as `17559` because RGLoader spoofs the reported version so that newer games run. The kernel is actually the 17489 devkit kernel.
 
 ### Setting up a run
 

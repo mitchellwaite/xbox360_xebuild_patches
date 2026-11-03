@@ -69,6 +69,18 @@
 # buffer. Xex1DisplayFlagGate ignores the flag while the running title is an XEX1,
 # which it can tell from the marker in Signature.
 #
+# xam ordinals
+# ------------
+# xam reshuffled its exports after 1838, so an import can resolve to something else
+# entirely. Ordinal 457 was XamCustomSetBannerImage and is now XamGetDefaultImage,
+# which traps on the texture pointer and locks up the console in Project Gotham
+# Racing 3. xex1RemapOrdinal fixes these up in HvxResolveImports, for xam import tables
+# with a 2.0 version older than 1861, which is where XEX2 starts.
+#
+# The table comes from the export names of 1838's xamd (with its PDB) and 17489's. A few
+# functions are gone, and those go to ordinal 1109, which is just li r3, 0; blr. Only
+# the names were compared, not the arguments. XexGetProcedureAddress isn't covered.
+
 # Things that don't need any changes, and why
 # -------------------------------------------
 # ImageKey:  every encrypted XEX1 checked uses the all-zero devkit key, so the HV has
@@ -149,10 +161,16 @@
 # HV, in HvxLoadImageData: bne cr6 on the page hash not matching
 .set HV_LoadImageData_HashCheck, 0x0002A578
 
+# HV, in HvxResolveImports: slwi r11, r11, 2 on the index into the export table
+.set HV_ResolveImports_Index,   0x0002ADC4
+
 # Empty space in the last page of .text, which ends at 0x801C1770. This is past the
 # strings in sysroot_hdd.S at 0x801C1850 and RGLoader's patch at 0x801C1774, and is
 # in the same 4KB page, so it's known to be mapped executable. Has until 0x801C2000.
 .set Xex1Cave, 0x801C1900
+
+# Empty HV space, past RGLoader's FixFuses at 0xB400. Has until 0xC000.
+.set Xex1HvCave, 0xB500
 
 # ----------------------------------------------------------------------------
 # Format constants, these should not need to change between kernels
@@ -160,6 +178,9 @@
 .set XEX_MAGIC_HI,    0x5845
 .set XEX_MAGIC_XEX1,  0x5831
 .set XEX_MAGIC_XEX2,  0x5832
+
+.set XAM_MODULE_NUMBER, 0xFCA15C76
+.set XEX2_FIRST_BUILD,  1861
 
 .set XEX1_INFO_END,   0x168                 # end of the fixed part of XEX1 SecurityInfo
 .set XEX1_GROWTH,     0x1C                  # sizeof(xex2::SecurityInfo) - sizeof(xex1::SecurityInfo)
@@ -624,6 +645,137 @@ KMAKEPATCH XexpLoadFile_LoadImageData
 MAKEPATCH HV_LoadImageData_HashCheck
 0:
    nop
+9:
+
+# ============================================================================
+# HvxResolveImports - send 1838 xam imports to where those functions are now.
+#
+# Replaces slwi r11, r11, 2. r11 = index into the export table, r26 = ordinal.
+# r9, r10 and r12 are free here. r1 is HvxResolveImports' frame, with the import
+# table header at +0x1F0 and the exporter's first ordinal at +0x88. r26 has to stay
+# as it is, because the thunk's second word gets checked against it after this.
+# ============================================================================
+MAKEPATCH Xex1HvCave
+0:
+xex1RemapOrdinal:
+   lwz      %r10, 0x204(%r1)                # import table's module number
+   lis      %r9, XAM_MODULE_NUMBER@h
+   ori      %r9, %r9, XAM_MODULE_NUMBER@l
+   cmplw    cr6, %r10, %r9
+   bne      cr6, xex1RemapDone
+   lwz      %r10, 0x208(%r1)                # import table's version, as build number
+   srwi     %r10, %r10, 8
+   addis    %r10, %r10, -0x20               # anything but 2.0.x ends up too big to pass
+   cmplwi   cr6, %r10, XEX2_FIRST_BUILD
+   bge      cr6, xex1RemapDone
+
+   mflr     %r12
+   bcl      20, 31, 1f
+1:
+   mflr     %r9
+   mtlr     %r12
+   addi     %r9, %r9, xex1RemapTable - 1b - 4
+   li       %r10, (xex1RemapTableEnd - xex1RemapTable) / 4
+   mtctr    %r10
+xex1RemapFind:
+   lhzu     %r10, 4(%r9)
+   cmplw    cr6, %r10, %r26
+   beq      cr6, xex1RemapFound
+   bdnz     xex1RemapFind
+   b        xex1RemapDone
+
+xex1RemapFound:
+   lhz      %r10, 2(%r9)
+   lwz      %r9, 0x88(%r1)
+   subf     %r11, %r9, %r10
+
+xex1RemapDone:
+   slwi     %r11, %r11, 2
+   blr
+
+   # 1838 ordinal, 17489 ordinal. See the top of this file for where these came from.
+xex1RemapTable:
+   .short  257,  258    # NetDll_UpnpActionCreate
+   .short  258,  259    # NetDll_UpnpActionGetResults
+   .short  259,  260    # NetDll_UpnpEventCreate
+   .short  260,  261    # NetDll_UpnpEventGetCurrentState
+   .short  261,  262    # NetDll_UpnpEventUnsubscribe
+   .short  262,  263    # NetDll_UpnpDoWork
+   .short  263,  264    # NetDll_UpnpCloseHandle
+   .short  450, 1109    # XamApplySkin (removed)
+   .short  452,  485    # XamFormatMessage
+   .short  453,  795    # XamBuildResourceLocator
+   .short  454,  789    # XamBuildSharedSystemResourceLocator
+   .short  455,  745    # XamShowMessageBox
+   .short  456, 1109    # XCustomGetBannerImage (removed)
+   .short  457, 1109    # XamCustomSetBannerImage (removed)
+   .short  458,  472    # XCustomSetAction
+   .short  459,  473    # XCustomGetLastActionPress
+   .short  460, 1109    # XCustomGetActionSetting (removed)
+   .short  461,  475    # XCustomBroadcastActionEvent
+   .short  462, 1109    # XamGetBkgndDefault (removed)
+   .short  463,  453    # XamGetDefaultSystemImage
+   .short  464,  487    # XamFormatTimeString
+   .short  466,  488    # XamFormatDateString
+   .short  467,  480    # XamDbgPrint
+   .short  468,  416    # XamEnableInactivityProcessing
+   .short  469,  415    # XamSetInactivityTime
+   .short  470,  460    # XamSetDashContext
+   .short  471,  461    # XamGetDashContext
+   .short  472,  463    # XamGetCurrentTitleId
+   .short  473,  454    # XamGetWCNConfigFile
+   .short  474,  462    # XamIsCurrentTitleDash
+   .short  475,  417    # XamResetInactivity
+   .short  476,  547    # XamAreMixedAccountsSignedIn
+   .short  477,  797    # XamBuildGamercardResourceLocator
+   .short  478,  418    # XamSetInactivityTimeFromConfig
+   .short  479,  798    # XamBuildDynamicResourceLocator
+   .short  480,  455    # XamSetPowerMode
+   .short  482,  456    # XamExecuteChallenge
+   .short  483,  746    # XamIsSysUiInvokedByXenonButton
+   .short  484,  747    # XamIsSysUiInvokedByTitle
+   .short  485,  486    # XamUniSortCmpString
+   .short  601,  603    # XamContentDelete
+   .short  603,  604    # XamContentCreateEnumerator
+   .short  604,  605    # XamContentCreateDeviceEnumerator
+   .short  605,  606    # XamContentGetDeviceData
+   .short  606,  607    # XamContentGetDeviceName
+   .short  607,  608    # XamContentSetThumbnail
+   .short  608,  590    # XamCreateEnumeratorHandle
+   .short  609,  591    # XamGetPrivateEnumStructureFromHandle
+   .short  610,  592    # XamEnumerate
+   .short  611,  609    # XamContentGetThumbnail
+   .short  612,  610    # XamContentGetCreator
+   .short  613,  611    # XamContentLaunchImage
+   .short  614,  612    # XamContentGetAttributes
+   .short  615,  613    # XamContentGetDeviceState
+   .short  616,  614    # XamContentGetLicenseMask
+   .short  617,  615    # XamContentFlush
+   .short  624,  633    # XamContentAggregateCreateEnumerator
+   .short  625,  624    # XamContentDeleteInternal
+   .short  626,  625    # XamContentCreateInternal
+   .short  627,  634    # XamContentCreateAndMountPackage
+   .short  628,  626    # XamContentSetThumbnailInternal
+   .short  629,  627    # XamContentLaunchImageInternal
+   .short  630,  635    # XamContentOpenPackageFile
+   .short  631,  636    # XamContentMountPackage
+   .short  632,  628    # XamContentWritePackageHeader
+   .short  633,  637    # XamContentFlushPackage
+   .short  634,  629    # XamContentDismountAndClosePackage
+   .short  635,  638    # XamContentClosePackageFile
+   .short  636,  616    # XamContentResolve
+   .short  637,  630    # XamContentResolveInternal
+   .short  638,  631    # XamContentGetAttributesInternal
+   .short  770,  775    # XamUserAddRecentPlayer
+   .short  771,  776    # XamUserUpdateRecentPlayer
+   .short  772,  777    # XamUserCreatePlayerEnumerator
+   .short  773,  778    # XamParseGamerTileKey
+xex1RemapTableEnd:
+9:
+
+MAKEPATCH HV_ResolveImports_Index
+0:
+   bla      Xex1HvCave
 9:
 
 # ============================================================================
