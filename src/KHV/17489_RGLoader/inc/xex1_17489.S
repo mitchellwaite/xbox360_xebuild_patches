@@ -1,8 +1,8 @@
 # ============================================================================
-# XEX1 loader support for the 17489 devkit kernel
+# XEX1 and XEX% loader support for the 17489 devkit kernel
 #
-# Lets the kernel load XEX1 executables (the format used by devkit build 1838)
-# alongside XEX2. Include this from khv_17489.S, before the patch list
+# Lets the kernel load XEX1 executables (the format used by devkit build 1838) and
+# XEX% executables (build 1746) alongside XEX2. Include this from khv_17489.S, before the patch list
 # terminator, by defining xex1:
 #
 #     .set xex1, 1
@@ -80,6 +80,54 @@
 # The table comes from the export names of 1838's xamd (with its PDB) and 17489's. A few
 # functions are gone, and those go to ordinal 1109, which is just li r3, 0; blr. Only
 # the names were compared, not the arguments. XexGetProcedureAddress isn't covered.
+#
+# XEX%
+# ----
+# The same idea as XEX1, with SecurityInfo growing by 0x30 instead:
+#
+#                       XEX% (1746)         XEX2 (17489)
+#   ImageFlags            +0x144              +0x10C
+#   LoadAddress           +0x130              +0x110
+#   ImageHash             +0x11C              +0x114
+#   ImageKey              +0x134              +0x150
+#   HeaderHash            +0x108              +0x164      recomputed
+#   AllowedMediaTypes     +0x14C              +0x17C
+#   PageDescriptorCount   +0x150              +0x180
+#   Page descriptors      +0x154              +0x184
+#
+# There's no MediaID or GameRegion, so those become zeroes and 0xFFFFFFFF. +0x148 is the
+# address of the HVI, not exports. It keeps the XEX1 marker in Signature, because it needs
+# the same zero key and display flag handling. A few things only XEX% needs:
+#
+# Keys:      imports 0x102FF to 0x103FF, build versions 0x201FF to 0x200FF, TLS 0x10504
+#            to 0x20104 and stack size 0x10400 to 0x20200, then the directory is sorted
+#            again because RtlImageXexHeaderField binary searches it.
+# Imports:   the tables have no module numbers or versions. Those get filled in by library
+#            name, which breaks the digests, so the chain is rebuilt back to front. Version
+#            is 2.0.1746.0, and that's what tells the HV which ordinals these are.
+# Ordinals:  anything older than 2.0.1838 is treated as 1746 for now. Kernel ordinals nearly
+#            all moved, so that table has every export. xam's only lists what moved. See
+#            xex25_ordinals_17489.S. Removed functions go to XeKeysReserved666 and ordinal
+#            1109, which are both li r3, 0; blr.
+# ME init:   1746's D3D gets its ME init packet from VdGetDefaultMEInitCommand and submits
+#            whatever comes back. It's gone on 17489, and returning nothing would leave the
+#            GPU's micro engine without one, so it's put back at an empty export slot.
+# Headers:   XAPI in these titles gets the headers from +0x50 of the module's loader entry
+#            and passes them to RtlImageXexHeaderField. That moved to +0x58, and +0x50 is
+#            now the timestamp, so these titles fault at startup. Their imports go to a
+#            wrapper at another empty export slot, which swaps it for the real pointer.
+# System command buffer: the struct VdGetSystemCommandBuffer fills in is 0x90 bytes on
+#            1746 and 1814, and 0x94 on 17489, with a new word at +0x10. D3D reads it in
+#            Swap, so these titles misread it and overrun their buffer once the HUD
+#            queues one. These imports also go through wrappers at empty export slots.
+# Engines:   D3D from 1746 calls VdInitializeEngines with only its version in r3. From 1814
+#            on it also passes a callback and microcode pointers, which 17489 uses, so a
+#            1746 title faults on whatever's left in those registers. Another wrapper
+#            clears them when r3 is just the version, which gets the default microcode.
+#
+# Xex25Cave holds what only XEX% uses. It's past the 4KB page Xex1Cave is known to run in,
+# so a problem with it can only affect XEX%. It's in the same 64KB page, and RGLoader's
+# patches at 0x10E0 make image memory executable anyway.
 
 # Things that don't need any changes, and why
 # -------------------------------------------
@@ -128,10 +176,6 @@
 #
 # Supporting older formats
 # ------------------------
-# XEX% is the next candidate, but it isn't a small change. Its kernel ordinals are
-# different, so it needs a table to remap them, and its import tables have no module
-# numbers or versions. That won't fit in Xex1Cave along with the conversion. None of
-# it has been started, see notes/XexPercentSupport.md.
 # XEX- isn't a small change. Its SecurityInfo and import tables are laid out quite
 # differently, and ImageHash is all zeroes (checked on one xshell.xex), so it
 # would also need the HvxLoadImageData hash check patched out at 0x2A578.
@@ -154,6 +198,9 @@
 .set RtlImageXexHeaderField,    0x800B3530
 .set XeCryptSha,                0x801556D8
 .set HvxLoadImageData,          0x8009F8F0
+.set VdGetSystemCommandBuffer,  0x800F8DD8
+.set VdQuerySystemCommandBuffer, 0x800F8C80
+.set VdInitializeEngines,       0x800F7F38
 
 # Kernel variables
 .set XexExecutableModuleHandle, 0x802080D4
@@ -164,10 +211,17 @@
 # HV, in HvxResolveImports: slwi r11, r11, 2 on the index into the export table
 .set HV_ResolveImports_Index,   0x0002ADC4
 
+# Kernel export table, ordinal 1 is the first entry and values are relative to KernelBase
+.set KernelExports,             0x8008002C
+.set KernelBase,                0x80040000
+
 # Empty space in the last page of .text, which ends at 0x801C1770. This is past the
 # strings in sysroot_hdd.S at 0x801C1850 and RGLoader's patch at 0x801C1774, and is
 # in the same 4KB page, so it's known to be mapped executable. Has until 0x801C2000.
 .set Xex1Cave, 0x801C1900
+
+# XEX% only, empty up to the data at 0x801D0030. See the top of this file.
+.set Xex25Cave, 0x801C2000
 
 # Empty HV space, past RGLoader's FixFuses at 0xB400. Has until 0xC000.
 .set Xex1HvCave, 0xB500
@@ -178,19 +232,393 @@
 .set XEX_MAGIC_HI,    0x5845
 .set XEX_MAGIC_XEX1,  0x5831
 .set XEX_MAGIC_XEX2,  0x5832
+.set XEX_MAGIC_XEX25, 0x5825
 
-.set XAM_MODULE_NUMBER, 0xFCA15C76
-.set XEX2_FIRST_BUILD,  1861
+.set XAM_MODULE_NUMBER,    0xFCA15C76
+.set KERNEL_MODULE_NUMBER, 0x45DC17E0
+.set XBDM_MODULE_NUMBER,   0xECEB8109
+.set XEX2_FIRST_BUILD,     1861
+.set XEX1_FIRST_BUILD,     1838
+.set XEX25_VERSION,        0x2006D200          # 2.0.1746.0
+
+# Empty slots in 17489's export table, for VdGetDefaultMEInitCommand and the wrappers
+.set XEX25_MEINIT_ORDINAL, 757
+.set XEX25_HEADERFIELD_ORDINAL, 898
+.set XEX25_GETSYSTEMCB_ORDINAL, 903
+.set XEX25_QUERYSYSTEMCB_ORDINAL, 908
+.set XEX25_INITENGINES_ORDINAL, 910
 
 .set XEX1_INFO_END,   0x168                 # end of the fixed part of XEX1 SecurityInfo
 .set XEX1_GROWTH,     0x1C                  # sizeof(xex2::SecurityInfo) - sizeof(xex1::SecurityInfo)
+.set XEX25_INFO_END,  0x154                 # end of the fixed part of XEX% SecurityInfo
+.set XEX25_GROWTH,    0x30
 .set XEX2_INFO_SIZE,  0x174                 # sizeof(xex2::HvImageInfo)
 
 # Copy of XEX1 SecurityInfo +0x108..+0x168, on the stack during the conversion
 .set STASH,           0x50
 .set STASH_START,     0x108
 .set STASH_WORDS,     (XEX1_INFO_END - STASH_START) / 4
-.set FRAME_SIZE,      0xF0
+.set FRAME_SIZE,      0x100
+
+# ============================================================================
+# XEX% only. These come first because Xex1Cave's branches need their addresses.
+# ============================================================================
+KMAKEPATCH Xex25Cave
+0:
+   # ------------------------------------------------------------------------
+   # Xex25FixHeaders - called by the conversion once there's room in the headers.
+   # r1 = the conversion's frame, r31 = headers. Puts the fields into the stash where
+   # the XEX1 ones are, so the rest of the conversion doesn't care about the format.
+   # Then renames the optional headers and sorts the directory.
+   # ------------------------------------------------------------------------
+xex25FixHeaders:
+   lwz      %r11, STASH + 0x144 - STASH_START(%r1)
+   stw      %r11, STASH + 0x158 - STASH_START(%r1)
+   lwz      %r11, STASH + 0x14C - STASH_START(%r1)
+   stw      %r11, STASH + 0x160 - STASH_START(%r1)
+   lwz      %r11, STASH + 0x150 - STASH_START(%r1)
+   stw      %r11, STASH + 0x164 - STASH_START(%r1)
+   li       %r11, -1
+   stw      %r11, STASH + 0x154 - STASH_START(%r1)
+   li       %r11, 0
+   stw      %r11, STASH + 0x144 - STASH_START(%r1)
+   stw      %r11, STASH + 0x148 - STASH_START(%r1)
+   stw      %r11, STASH + 0x14C - STASH_START(%r1)
+   stw      %r11, STASH + 0x150 - STASH_START(%r1)
+
+   mflr     %r12
+   bl       xex25KeysEnd
+   .long    0x102FF, 0x103FF
+   .long    0x201FF, 0x200FF
+   .long    0x10504, 0x20104
+   .long    0x10400, 0x20200
+xex25KeysEnd:
+   mflr     %r7
+   mtlr     %r12
+   li       %r6, 4
+xex25RenameKey:
+   lwz      %r9, 0x14(%r31)
+   mtctr    %r9
+   addi     %r8, %r31, 0x18 - 8
+   lwz      %r4, 0(%r7)
+   lwz      %r3, 4(%r7)
+   addi     %r7, %r7, 8
+xex25RenameFind:
+   lwzu     %r11, 8(%r8)
+   cmplw    cr6, %r11, %r4
+   bne      cr6, xex25RenameNext
+   stw      %r3, 0(%r8)
+xex25RenameNext:
+   bdnz     xex25RenameFind
+   addic.   %r6, %r6, -1
+   bne      xex25RenameKey
+
+   # Sort the directory. It's short and nearly in order already.
+xex25Sort:
+   li       %r5, 0
+   lwz      %r9, 0x14(%r31)
+   addi     %r9, %r9, -1
+   cmplwi   cr6, %r9, 0
+   beqlr    cr6
+   mtctr    %r9
+   addi     %r8, %r31, 0x18
+xex25SortLoop:
+   ld       %r11, 0(%r8)
+   ld       %r10, 8(%r8)
+   cmpld    cr6, %r11, %r10
+   ble      cr6, xex25SortNext
+   std      %r10, 0(%r8)
+   std      %r11, 8(%r8)
+   li       %r5, 1
+xex25SortNext:
+   addi     %r8, %r8, 8
+   bdnz     xex25SortLoop
+   cmplwi   cr6, %r5, 0
+   bne      cr6, xex25Sort
+   blr
+
+   # ------------------------------------------------------------------------
+   # Xex25FixImports - fills in each import table's module number and versions, then
+   # rebuilds the digest chain from the last table back. The conversion computes
+   # ImportDigest from the first table afterwards, the same as for XEX1.
+   #
+   # r26 = import descriptor or zero, r29 = SizeOfHeaders, r31 = headers. Uses r24, which
+   # the conversion has finished with. Stops if a table isn't inside the headers, and
+   # the HV then fails the title on its digest.
+   #
+   # r3 = next table, r4 = end of the headers, r5 = library names, r8 = this table
+   # ------------------------------------------------------------------------
+xex25FixImports:
+   cmplwi   cr6, %r26, 0
+   beqlr    cr6
+   lwz      %r24, 8(%r26)
+   cmplwi   cr6, %r24, 0
+   beqlr    cr6
+   mflr     %r12
+   stw      %r12, -8(%r1)
+   stwu     %r1, -0x60(%r1)
+
+   add      %r4, %r31, %r29
+   lwz      %r3, 4(%r26)
+   cmplw    cr6, %r3, %r29
+   bgt      cr6, xex25ImportsDone
+   addi     %r5, %r26, 0xC
+   add      %r8, %r5, %r3
+   mtctr    %r24
+xex25ImportTable:
+   subf     %r11, %r8, %r4
+   cmpwi    cr6, %r11, 0x28
+   blt      cr6, xex25ImportsDone
+   lwz      %r3, 0(%r8)
+   cmplwi   cr6, %r3, 0x28
+   blt      cr6, xex25ImportsDone
+   cmplw    cr6, %r3, %r11
+   bgt      cr6, xex25ImportsDone
+   lhz      %r6, 0x26(%r8)
+   slwi     %r6, %r6, 2
+   addi     %r6, %r6, 0x28
+   cmplw    cr6, %r6, %r3
+   bgt      cr6, xex25ImportsDone
+   add      %r3, %r8, %r3
+
+   # Names are null terminated and aligned to 4 bytes
+   lbz      %r6, 0x25(%r8)
+   mr       %r10, %r5
+xex25FindName:
+   cmplwi   cr6, %r6, 0
+   beq      cr6, xex25HaveName
+xex25SkipName:
+   cmplw    cr6, %r10, %r4
+   bge      cr6, xex25ImportsDone
+   lbz      %r11, 0(%r10)
+   addi     %r10, %r10, 1
+   cmplwi   cr6, %r11, 0
+   bne      cr6, xex25SkipName
+   addi     %r10, %r10, 3
+   clrrwi   %r10, %r10, 2
+   addi     %r6, %r6, -1
+   b        xex25FindName
+xex25HaveName:
+   addi     %r11, %r10, 3
+   cmplw    cr6, %r11, %r4
+   bge      cr6, xex25ImportsDone
+
+   # Telling xam.xex, xboxkrnl.exe and xbdm.xex apart. A module number stays zero for
+   # any other library, so the HV fails that title with C0000225.
+   lbz      %r11, 0(%r10)
+   cmplwi   cr6, %r11, 0x78                 # x
+   bne      cr6, xex25NextTable
+   lhz      %r10, 1(%r10)
+   cmplwi   cr6, %r10, 0x616D               # am
+   lis      %r11, XAM_MODULE_NUMBER@h
+   ori      %r11, %r11, XAM_MODULE_NUMBER@l
+   beq      cr6, xex25HaveModule
+   cmplwi   cr6, %r10, 0x626F               # bo
+   lis      %r11, KERNEL_MODULE_NUMBER@h
+   ori      %r11, %r11, KERNEL_MODULE_NUMBER@l
+   beq      cr6, xex25HaveModule
+   cmplwi   cr6, %r10, 0x6264               # bd
+   lis      %r11, XBDM_MODULE_NUMBER@h
+   ori      %r11, %r11, XBDM_MODULE_NUMBER@l
+   bne      cr6, xex25NextTable
+xex25HaveModule:
+   stw      %r11, 0x18(%r8)
+   lis      %r11, XEX25_VERSION@h
+   ori      %r11, %r11, XEX25_VERSION@l
+   stw      %r11, 0x1C(%r8)
+   stw      %r11, 0x20(%r8)
+xex25NextTable:
+   mr       %r8, %r3
+   bdnz     xex25ImportTable
+
+   # Each table holds the digest of the next. r24 = index of the table to hash.
+xex25Chain:
+   addic.   %r24, %r24, -1
+   beq      xex25ImportsDone
+   lwz      %r3, 4(%r26)
+   add      %r8, %r26, %r3
+   addi     %r8, %r8, 0xC
+   mtctr    %r24
+xex25ChainWalk:
+   mr       %r9, %r8
+   lwz      %r11, 0(%r8)
+   add      %r8, %r8, %r11
+   bdnz     xex25ChainWalk
+   lhz      %r6, 0x26(%r8)
+   slwi     %r6, %r6, 2
+   addi     %r9, %r9, 4
+   addi     %r3, %r8, 4
+   li       %r4, 0x24
+   addi     %r5, %r8, 0x28
+   li       %r7, 0
+   li       %r8, 0
+   li       %r10, 0x14
+   KMAKEBRANCHL XeCryptSha
+   b        xex25Chain
+
+xex25ImportsDone:
+   addi     %r1, %r1, 0x60
+   lwz      %r12, -8(%r1)
+   mtlr     %r12
+   blr
+
+   # ------------------------------------------------------------------------
+   # VdGetDefaultMEInitCommand, the same as 1746's. r3 = buffer, r4 = its size in words.
+   # Returns the number of words written, or zero if the buffer's too small.
+   # ------------------------------------------------------------------------
+xex25GetDefaultMEInitCommand:
+   cmplwi   cr6, %r4, 0x40
+   bge      cr6, xex25MEInitWrite
+   li       %r3, 0
+   blr
+xex25MEInitWrite:
+   lis      %r11, 0xC011
+   ori      %r11, %r11, 0x4800
+   stw      %r11, 0(%r3)
+   li       %r11, 0x3FF
+   stw      %r11, 4(%r3)
+   li       %r11, 0
+   stw      %r11, 8(%r3)
+   addi     %r10, %r3, 0xC
+   stw      %r11, 0(%r10)
+   li       %r9, 8
+   mtctr    %r9
+   li       %r9, 0
+xex25MEInitLoop:
+   stwu     %r9, 4(%r10)
+   addi     %r9, %r9, 0x80
+   bdnz     xex25MEInitLoop
+   li       %r9, 0x800
+   stwu     %r9, 4(%r10)
+   li       %r9, 7
+   stwu     %r9, 4(%r10)
+   li       %r9, 5
+   mtctr    %r9
+xex25MEInitZero:
+   stwu     %r11, 4(%r10)
+   bdnz     xex25MEInitZero
+   sync
+   subf     %r3, %r3, %r10
+   addi     %r3, %r3, 4
+   srawi    %r3, %r3, 2
+   blr
+
+   # ------------------------------------------------------------------------
+   # RtlImageXexHeaderField for titles older than 1838. r3 = headers, r4 = key. These titles
+   # read the headers from +0x50 of the module's loader entry, where 17489 has the
+   # timestamp, so r3 is that value and the real function faults on it. Anything else
+   # passes straight through.
+   # ------------------------------------------------------------------------
+xex25ImageXexHeaderField:
+   lis      %r11, XexExecutableModuleHandle@ha
+   lwz      %r11, XexExecutableModuleHandle@l(%r11)
+   cmplwi   cr6, %r11, 0
+   beq      cr6, xex25HeaderFieldCall
+   lwz      %r10, 0x50(%r11)
+   cmplw    cr6, %r3, %r10
+   bne      cr6, xex25HeaderFieldCall
+   lwz      %r3, 0x58(%r11)
+xex25HeaderFieldCall:
+   KMAKEBRANCH RtlImageXexHeaderField
+
+   # ------------------------------------------------------------------------
+   # VdGetSystemCommandBuffer and VdQuerySystemCommandBuffer for titles older than 1838.
+   # r3 = the title's 0x90 byte struct, which Query allows to be null. Calls the real
+   # function with a 0x94 byte one, then copies it back without the word at +0x10.
+   # ------------------------------------------------------------------------
+xex25GetSystemCommandBuffer:
+   lis      %r12, VdGetSystemCommandBuffer@h
+   ori      %r12, %r12, VdGetSystemCommandBuffer@l
+   b        xex25SystemCommandBuffer
+xex25QuerySystemCommandBuffer:
+   lis      %r12, VdQuerySystemCommandBuffer@h
+   ori      %r12, %r12, VdQuerySystemCommandBuffer@l
+xex25SystemCommandBuffer:
+   mflr     %r11
+   stw      %r11, -8(%r1)
+   std      %r31, -0x10(%r1)
+   stwu     %r1, -0x100(%r1)
+   mr       %r31, %r3
+   cmplwi   cr6, %r3, 0
+   beq      cr6, xex25SystemCommandCall
+   addi     %r3, %r1, 0x50
+xex25SystemCommandCall:
+   mtctr    %r12
+   bctrl
+   cmplwi   cr6, %r31, 0
+   beq      cr6, xex25SystemCommandDone
+   addi     %r10, %r1, 0x50 - 4
+   addi     %r9, %r31, -4
+   li       %r8, 4
+   mtctr    %r8
+xex25SystemCommandHead:
+   lwzu     %r8, 4(%r10)
+   stwu     %r8, 4(%r9)
+   bdnz     xex25SystemCommandHead
+   addi     %r10, %r10, 4
+   li       %r8, 0x20
+   mtctr    %r8
+xex25SystemCommandTail:
+   lwzu     %r8, 4(%r10)
+   stwu     %r8, 4(%r9)
+   bdnz     xex25SystemCommandTail
+xex25SystemCommandDone:
+   addi     %r1, %r1, 0x100
+   lwz      %r11, -8(%r1)
+   mtlr     %r11
+   ld       %r31, -0x10(%r1)
+   blr
+
+   # ------------------------------------------------------------------------
+   # VdInitializeEngines for titles older than 1838. 1746's D3D only passes its version,
+   # as 0x6D2 in r3. 1814's has the build in the top half and sets the rest, so it
+   # passes straight through. r4 is a callback and r6 and r7 are microcode, and 17489
+   # skips the callback and uses its own microcode when they're zero.
+   # ------------------------------------------------------------------------
+xex25InitializeEngines:
+   lis      %r11, 1
+   cmplw    cr6, %r3, %r11
+   bge      cr6, xex25InitializeEnginesCall
+   li       %r4, 0
+   li       %r5, 0
+   li       %r6, 0
+   li       %r7, 0
+xex25InitializeEnginesCall:
+   KMAKEBRANCH VdInitializeEngines
+9:
+
+.set Xex25FixHeaders,   Xex25Cave + (xex25FixHeaders - 0b)
+.set Xex25FixImports,   Xex25Cave + (xex25FixImports - 0b)
+.set Xex25GetDefaultMEInitCommand, Xex25Cave + (xex25GetDefaultMEInitCommand - 0b)
+.set Xex25ImageXexHeaderField, Xex25Cave + (xex25ImageXexHeaderField - 0b)
+.set Xex25GetSystemCommandBuffer, Xex25Cave + (xex25GetSystemCommandBuffer - 0b)
+.set Xex25QuerySystemCommandBuffer, Xex25Cave + (xex25QuerySystemCommandBuffer - 0b)
+.set Xex25InitializeEngines, Xex25Cave + (xex25InitializeEngines - 0b)
+
+KMAKEPATCH KernelExports + (XEX25_MEINIT_ORDINAL - 1) * 4
+0:
+   .long    Xex25GetDefaultMEInitCommand - KernelBase
+9:
+
+KMAKEPATCH KernelExports + (XEX25_HEADERFIELD_ORDINAL - 1) * 4
+0:
+   .long    Xex25ImageXexHeaderField - KernelBase
+9:
+
+KMAKEPATCH KernelExports + (XEX25_GETSYSTEMCB_ORDINAL - 1) * 4
+0:
+   .long    Xex25GetSystemCommandBuffer - KernelBase
+9:
+
+KMAKEPATCH KernelExports + (XEX25_QUERYSYSTEMCB_ORDINAL - 1) * 4
+0:
+   .long    Xex25QuerySystemCommandBuffer - KernelBase
+9:
+
+KMAKEPATCH KernelExports + (XEX25_INITENGINES_ORDINAL - 1) * 4
+0:
+   .long    Xex25InitializeEngines - KernelBase
+9:
 
 # ============================================================================
 # Xex1HeaderFixup
@@ -199,6 +627,7 @@
 # that function has already saved off its arguments. Has to run the instruction
 # it replaced (lwz r11, 0x10(r31)) before returning.
 #
+# r24 = end of the fixed part of SecurityInfo, r25 = how much it grows,
 # r26 = end of the range to move, r27 = new end of SecurityInfo,
 # r28 = SecurityInfo, r29 = SizeOfHeaders, r30 = SecurityInfo offset
 # ============================================================================
@@ -210,20 +639,34 @@ xex1HeaderFixup:
    ori      %r10, %r10, XEX_MAGIC_XEX1
    cmplw    cr6, %r11, %r10
    beq      cr6, xex1Convert
+   addi     %r10, %r10, XEX_MAGIC_XEX25 - XEX_MAGIC_XEX1
+   cmplw    cr6, %r11, %r10
+   beq      cr6, xex1Convert
 
-   # Not XEX1, nothing to do
+   # Not XEX1 or XEX%, nothing to do
    lwz      %r11, 0x10(%r31)
    blr
 
 xex1Convert:
    mflr     %r12
    stw      %r12, -8(%r1)
+   std      %r24, -0x48(%r1)
+   std      %r25, -0x40(%r1)
    std      %r26, -0x38(%r1)
    std      %r27, -0x30(%r1)
    std      %r28, -0x28(%r1)
    std      %r29, -0x20(%r1)
    std      %r30, -0x18(%r1)
    stwu     %r1, -FRAME_SIZE(%r1)
+
+   li       %r24, XEX1_INFO_END
+   li       %r25, XEX1_GROWTH
+   clrlwi   %r11, %r11, 16
+   cmplwi   cr6, %r11, XEX_MAGIC_XEX1
+   beq      cr6, xex1HaveFormat
+   li       %r24, XEX25_INFO_END
+   li       %r25, XEX25_GROWTH
+xex1HaveFormat:
 
    # Don't trust anything yet, these headers might not have been verified by
    # anything and SecurityInfo isn't rejected for being odd until later on.
@@ -246,12 +689,12 @@ xex1Convert:
 
    # Size has to be sane and the bigger SecurityInfo has to fit in the headers
    lwz      %r11, 0(%r28)
-   cmplwi   cr6, %r11, XEX1_INFO_END
+   cmplw    cr6, %r11, %r24
    blt      cr6, xex1Bail
    cmplw    cr6, %r11, %r29
    bgt      cr6, xex1Bail
    add      %r27, %r30, %r11
-   addi     %r27, %r27, XEX1_GROWTH
+   add      %r27, %r27, %r25
    cmplw    cr6, %r27, %r29
    bgt      cr6, xex1Bail
 
@@ -302,8 +745,8 @@ xex1HaveRoom:
 
    # Move page descriptors and optional headers out of the way, back to front
    add      %r8, %r31, %r26
-   addi     %r10, %r8, -XEX1_GROWTH
-   addi     %r9, %r28, XEX1_INFO_END
+   subf     %r10, %r25, %r8
+   add      %r9, %r28, %r24
 xex1Move:
    cmplw    cr6, %r10, %r9
    ble      cr6, xex1MoveDone
@@ -316,7 +759,7 @@ xex1MoveDone:
    lwz      %r9, 0x14(%r31)
    mtctr    %r9
    addi     %r8, %r31, 0x18 - 8
-   addi     %r7, %r30, XEX1_INFO_END
+   add      %r7, %r30, %r24
 xex1FixDir:
    lwzu     %r11, 8(%r8)
    clrlwi   %r11, %r11, 24
@@ -327,12 +770,18 @@ xex1FixDir:
    blt      cr6, xex1FixDirNext
    cmplw    cr6, %r11, %r26
    bge      cr6, xex1FixDirNext
-   addi     %r11, %r11, XEX1_GROWTH
+   add      %r11, %r11, %r25
    stw      %r11, 4(%r8)
 xex1FixDirNext:
    bdnz     xex1FixDir
 
-   # Exports moved from a header to SecurityInfo. Zero if there aren't any.
+   cmplwi   cr6, %r25, XEX1_GROWTH
+   beq      cr6, xex1HeadersReady
+   KMAKEBRANCHL Xex25FixHeaders
+xex1HeadersReady:
+
+   # Exports moved from a header to SecurityInfo. Zero if there aren't any. XEX% has no
+   # 0x10400 by this point, as that was its stack size.
    mr       %r3, %r31
    lis      %r4, 1
    ori      %r4, %r4, 0x400
@@ -387,7 +836,7 @@ xex1FixDirNext:
    stw      %r11, 0x180(%r28)
 
    lwz      %r11, 0(%r28)
-   addi     %r11, %r11, XEX1_GROWTH
+   add      %r11, %r11, %r25
    stw      %r11, 0(%r28)
 
    lis      %r11, XEX_MAGIC_HI
@@ -395,6 +844,11 @@ xex1FixDirNext:
    stw      %r10, 8(%r28)                   # marker for the display and key checks
    ori      %r11, %r11, XEX_MAGIC_XEX2
    stw      %r11, 0(%r31)
+
+   cmplwi   cr6, %r25, XEX1_GROWTH
+   beq      cr6, xex1ImportsReady
+   KMAKEBRANCHL Xex25FixImports
+xex1ImportsReady:
 
    # ImportTableCount. Without one the HV won't go looking for import tables.
    li       %r11, 0
@@ -451,6 +905,8 @@ xex1Bail:
    addi     %r1, %r1, FRAME_SIZE
    lwz      %r12, -8(%r1)
    mtlr     %r12
+   ld       %r24, -0x48(%r1)
+   ld       %r25, -0x40(%r1)
    ld       %r26, -0x38(%r1)
    ld       %r27, -0x30(%r1)
    ld       %r28, -0x28(%r1)
@@ -460,19 +916,19 @@ xex1Bail:
    blr
 
    # ------------------------------------------------------------------------
-   # Xex1IsRoomAt - are the XEX1_GROWTH bytes before header offset r3 free, and
-   # will moving data up to there leave SecurityInfo intact? cr6.eq = yes
+   # Xex1IsRoomAt - are the r25 bytes before header offset r3 free, and will moving
+   # data up to there leave SecurityInfo intact? cr6.eq = yes
    # r27 = where SecurityInfo will end.
    # ------------------------------------------------------------------------
 xex1IsRoomAt:
-   addi     %r11, %r3, -XEX1_GROWTH
+   subf     %r11, %r25, %r3
    cmplw    cr6, %r11, %r27
    bltlr    cr6
    clrlwi   %r11, %r3, 30
    cmplwi   cr6, %r11, 0
    bnelr    cr6
    add      %r10, %r31, %r3
-   li       %r9, XEX1_GROWTH / 4
+   srwi     %r9, %r25, 2
    mtctr    %r9
 xex1IsRoomLoop:
    lwzu     %r11, -4(%r10)
@@ -592,11 +1048,14 @@ xex1MagicGate:
    beqlr    cr6
    addi     %r10, %r10, XEX_MAGIC_XEX1 - XEX_MAGIC_XEX2
    cmplw    cr6, %r11, %r10
+   beqlr    cr6
+   addi     %r10, %r10, XEX_MAGIC_XEX25 - XEX_MAGIC_XEX1
+   cmplw    cr6, %r11, %r10
    blr
 
    # ------------------------------------------------------------------------
    # Xex1DisplayFlagGate - replaces rlwinm. r11, r26, 0, 1, 1 in VdSetDisplayMode.
-   # r26 = flags. cr0.eq = flag 0x40000000 isn't set, or the running title is XEX1.
+   # r26 = flags. cr0.eq = flag 0x40000000 isn't set, or the running title has the XEX1 marker.
    # ------------------------------------------------------------------------
 xex1DisplayFlagGate:
    rlwinm.  %r11, %r26, 0, 1, 1
@@ -648,34 +1107,62 @@ MAKEPATCH HV_LoadImageData_HashCheck
 9:
 
 # ============================================================================
-# HvxResolveImports - send 1838 xam imports to where those functions are now.
+# HvxResolveImports - send old kernel and xam imports to where those functions are now.
 #
 # Replaces slwi r11, r11, 2. r11 = index into the export table, r26 = ordinal.
-# r9, r10 and r12 are free here. r1 is HvxResolveImports' frame, with the import
-# table header at +0x1F0 and the exporter's first ordinal at +0x88. r26 has to stay
-# as it is, because the thunk's second word gets checked against it after this.
+# r9, r10 and r12 are free here, and so are cr7 and ctr. r1 is HvxResolveImports' frame,
+# with the import table header at +0x1F0 and the exporter's first ordinal at +0x88. r26
+# has to stay as it is, because the thunk's second word gets checked against it after this.
+#
+# Going by the table's version, anything older than 1838 uses the 1746 ordinals, and 1838
+# up to the start of XEX2 uses the 1838 ones. 1838's kernel ordinals didn't need a table.
 # ============================================================================
 MAKEPATCH Xex1HvCave
 0:
 xex1RemapOrdinal:
-   lwz      %r10, 0x204(%r1)                # import table's module number
-   lis      %r9, XAM_MODULE_NUMBER@h
-   ori      %r9, %r9, XAM_MODULE_NUMBER@l
-   cmplw    cr6, %r10, %r9
-   bne      cr6, xex1RemapDone
    lwz      %r10, 0x208(%r1)                # import table's version, as build number
    srwi     %r10, %r10, 8
    addis    %r10, %r10, -0x20               # anything but 2.0.x ends up too big to pass
    cmplwi   cr6, %r10, XEX2_FIRST_BUILD
    bge      cr6, xex1RemapDone
+   cmplwi   cr7, %r10, XEX1_FIRST_BUILD
 
    mflr     %r12
    bcl      20, 31, 1f
 1:
    mflr     %r9
    mtlr     %r12
+
+   lwz      %r10, 0x204(%r1)                # import table's module number
+   lis      %r12, XAM_MODULE_NUMBER@h
+   ori      %r12, %r12, XAM_MODULE_NUMBER@l
+   cmplw    cr6, %r10, %r12
+   beq      cr6, xex1RemapXam
+   lis      %r12, KERNEL_MODULE_NUMBER@h
+   ori      %r12, %r12, KERNEL_MODULE_NUMBER@l
+   cmplw    cr6, %r10, %r12
+   bne      cr6, xex1RemapDone
+   bge      cr7, xex1RemapDone
+
+   # Anything past the end of 1746's exports isn't a real import, so it gets the stub
+   addi     %r10, %r26, -XEX25_KERNEL_FIRST
+   cmplwi   cr6, %r10, XEX25_KERNEL_COUNT
+   li       %r12, XEX25_KERNEL_STUB
+   bge      cr6, xex1RemapKernelStub
+   slwi     %r10, %r10, 1
+   addi     %r9, %r9, xex25KernelTable - 1b
+   lhzx     %r12, %r9, %r10
+xex1RemapKernelStub:
+   mr       %r10, %r12
+   b        xex1RemapHave
+
+xex1RemapXam:
    addi     %r9, %r9, xex1RemapTable - 1b - 4
    li       %r10, (xex1RemapTableEnd - xex1RemapTable) / 4
+   bge      cr7, xex1RemapXamScan
+   addi     %r9, %r9, xex25XamTable - xex1RemapTable
+   li       %r10, (xex25XamTableEnd - xex25XamTable) / 4
+xex1RemapXamScan:
    mtctr    %r10
 xex1RemapFind:
    lhzu     %r10, 4(%r9)
@@ -686,6 +1173,7 @@ xex1RemapFind:
 
 xex1RemapFound:
    lhz      %r10, 2(%r9)
+xex1RemapHave:
    lwz      %r9, 0x88(%r1)
    subf     %r11, %r9, %r10
 
@@ -771,6 +1259,8 @@ xex1RemapTable:
    .short  772,  777    # XamUserCreatePlayerEnumerator
    .short  773,  778    # XamParseGamerTileKey
 xex1RemapTableEnd:
+
+.include "xex25_ordinals_17489.S"
 9:
 
 MAKEPATCH HV_ResolveImports_Index
@@ -779,7 +1269,7 @@ MAKEPATCH HV_ResolveImports_Index
 9:
 
 # ============================================================================
-# XexpLoadXexHeaders - accept XEX1 magic
+# XexpLoadXexHeaders - accept XEX1 and XEX% magic
 # ============================================================================
 KMAKEPATCH XexpLoadXexHeaders_Magic
 0:
@@ -787,7 +1277,7 @@ KMAKEPATCH XexpLoadXexHeaders_Magic
 9:
 
 # ============================================================================
-# XexLoadImageHeaders - accept XEX1 magic
+# XexLoadImageHeaders - accept XEX1 and XEX% magic
 # ============================================================================
 KMAKEPATCH XexLoadImageHeaders_Magic
 0:
@@ -795,7 +1285,7 @@ KMAKEPATCH XexLoadImageHeaders_Magic
 9:
 
 # ============================================================================
-# XexpVerifyXexHeaders - convert XEX1 headers on the way in. All of the paths
+# XexpVerifyXexHeaders - convert XEX1 and XEX% headers on the way in. All of the paths
 # which load headers come through here, so this is the only place that does it.
 # ============================================================================
 KMAKEPATCH XexpVerifyXexHeaders_Hook
@@ -804,5 +1294,5 @@ KMAKEPATCH XexpVerifyXexHeaders_Hook
 9:
 
 # ============================================================================
-# End of XEX1 support
+# End of XEX1 and XEX% support
 # ============================================================================

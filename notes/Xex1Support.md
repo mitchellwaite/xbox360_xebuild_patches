@@ -121,7 +121,7 @@ Ordinal 457 was `XamCustomSetBannerImage` on 1838. On 17489 it's `XamGetDefaultI
 
 Comparing 1838's `xamd` exports, named with its PDB, against 17489's found 71 moved ordinals, and functions that are gone. Six of the moved ones are PGR3 imports: `XamContentDelete`, `XamContentCreateEnumerator`, `XamCreateEnumeratorHandle`, `XamGetPrivateEnumStructureFromHandle`, `XamEnumerate` and `XamContentGetDeviceState`.
 
-`xex1RemapOrdinal` in `xex1_17489.S` fixes the index into the export table in `HvxResolveImports`. It leaves `r26` alone, because the thunk's second word gets checked against it afterwards. It only acts on xam tables with a 2.0 version older than 1861, which is where XEX2 starts, so it doesn't affect XEX2 and doesn't need the marker. The table is from 1838. 1839's xam has the same exports at the same ordinals going by the code (658 of 662 functions start the same, and the other 4 aren't moved anywhere). Every XEX1 surveyed imports xam at 1838 or 1839. The code and table are at `0xB500` in the HV.
+`xex1RemapOrdinal` in `xex1_17489.S` fixes the index into the export table in `HvxResolveImports`. It leaves `r26` alone, because the thunk's second word gets checked against it afterwards. It only acts on tables with a 2.0 version older than 1861, which is where XEX2 starts, so it doesn't affect XEX2 and doesn't need the marker. From 1838 up to there it uses this table, for xam only. Anything older gets the [`XEX%` tables](XexPercentSupport.md#ordinals). The table is from 1838. 1839's xam has the same exports at the same ordinals going by the code (658 of 662 functions start the same, and the other 4 aren't moved anywhere). Every XEX1 surveyed imports xam at 1838 or 1839. The code and table are at `0xB500` in the HV.
 
 | 1838 ordinals | What happens to them |
 | - | - |
@@ -186,8 +186,10 @@ All of these are in one block at the top of `xex1_17489.S`, apart from the RGLoa
 | `VdSetDisplayMode_Flag` | `0x800F77C4` | `rlwinm. r11, r26, 0, 1, 1` |
 | `HV_LoadImageData_HashCheck` | `0x0002A578` | `bne cr6` |
 | `HV_ResolveImports_Index` | `0x0002ADC4` | `slwi r11, r11, 2` |
-| `Xex1HvCave` | `0x0000B500` | Empty, free until `0xC000` |
-| `Xex1Cave` | `0x801C1900` | Empty, `0x26C` bytes free |
+| `Xex1HvCave` | `0x0000B500` | Empty, free until `0xC000`, used up to `0xBCBC` |
+| `Xex1Cave` | `0x801C1900` | Empty, `0x210` bytes free |
+| `Xex25Cave` | `0x801C2000` | Empty, `XEX%` only |
+| Kernel export 757 | `0x80080BFC` | Empty, `XEX%` only |
 | RGLoader `0xB224` | `0x0000B224` | `bge cr6, 0x8` (RGLoader's own code) |
 | `RtlImageXexHeaderField` | `0x800B3530` | |
 | `XeCryptSha` | `0x801556D8` | |
@@ -236,7 +238,7 @@ The scripts behind these notes are in `tools/xex1_tests`, and its README covers 
 
 There are 39 loose `XEX-` files, all from early dumps.
 
-- **`XEX%`:** the next candidate. It needs a kernel ordinal remap, so it's more work than XEX1 was. See [XexPercentSupport.md](XexPercentSupport.md).
+- **`XEX%`:** added, and not yet run on a console. See [XexPercentSupport.md](XexPercentSupport.md).
 - **`XEX-`:** not small. SecurityInfo and import tables are laid out quite differently, and ImageHash is all zeroes (checked on one `xshell.xex`).
 - **`XEX?` and `XEX0`:** no SecurityInfo at all.
 
@@ -438,5 +440,5 @@ Guesses from the imports, not findings:
 - **Keep it away from XEX2.** Gate it on the `XEX1` marker, as `Xex1DisplayFlagGate` does, unless it can't affect anything else.
 - **Prove it live before patching, if possible.** `ed` on a register or memory, then watching the screen, took seconds and settled the display bug. It's much cheaper than a flash.
 - **Add a test.** Each fix so far has one in `tools/xex1_tests`, covering XEX2 as well. Modelling the rules a fix depends on is what would have caught the earlier bugs.
-- **Mind the space.** `Xex1Cave` has `0x26C` bytes left, and anything that doesn't fit needs another confirmed-executable location.
+- **Mind the space.** `Xex1Cave` has `0x210` bytes left, and anything that doesn't fit needs another confirmed-executable location.
 - **Stop if it isn't the patch's job.** Some titles might need so many fixes that it stops being a loader patch. It's fine to record that here and move on to the next title.

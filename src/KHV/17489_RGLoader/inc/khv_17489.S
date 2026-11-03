@@ -1154,7 +1154,7 @@ KMAKEPATCH 0x801331F0
 9:
 
 #============================================================================
-# XEX1 support, for running executables from devkit build 1838
+# XEX1 and XEX% support, for running executables from devkit builds 1838 and 1746
 #============================================================================
 .ifdef xex1
 .include "xex1_17489.S"
