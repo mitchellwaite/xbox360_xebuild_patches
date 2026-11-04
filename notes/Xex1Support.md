@@ -239,7 +239,7 @@ The scripts behind these notes are in `tools/xex1_tests`, and its README covers 
 There are 39 loose `XEX-` files, all from early dumps.
 
 - **`XEX%`:** added, and not yet run on a console. See [XexPercentSupport.md](XexPercentSupport.md).
-- **`XEX-`:** not small. SecurityInfo and import tables are laid out quite differently, and ImageHash is all zeroes (checked on one `xshell.xex`).
+- **`XEX-`:** added, and not yet run on a console. See [XexMinusSupport.md](XexMinusSupport.md).
 - **`XEX?` and `XEX0`:** no SecurityInfo at all.
 
 ## Debugging more complex XEX1 titles

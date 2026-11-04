@@ -137,6 +137,16 @@ MAKEPATCH 0x81733ACC
 	b -0xFC
 9:
 
+# ============================================================================
+#       XamLoaderSetLaunchData
+#       NOPs out an assertion on the size being over 0x3FC, it's still clamped
+#       after this. Call of Duty 2 passes 0x808, which 1640 silently clamped too
+# ============================================================================
+MAKEPATCH 0x8175CE50
+0:
+	nop
+9:
+
 # done with patch section
 
 #============================================================================
