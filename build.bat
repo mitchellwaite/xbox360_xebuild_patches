@@ -221,7 +221,10 @@ REM *** the corona 4gb patch is the same as what i'd use to build a hacky devkit
 copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_g2mcorona_flash.bin
 
 REM *** this is just a test for my falcon JTAG
-copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_RGLoader\khv_vfuses_jtag.bin output\17489_RGLoader\patches_falcon.bin
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag_rgl.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_RGLoader\khv_vfuses_jtag.bin output\17489_RGLoader\patches_falcon.bin
+copy output\17489_RGLoader\patches_falcon.bin output\17489_RGLoader\patches_xenon.bin
+copy output\17489_RGLoader\patches_falcon.bin output\17489_RGLoader\patches_zephyr.bin
+copy output\17489_RGLoader\patches_falcon.bin output\17489_RGLoader\patches_jasper.bin
 
 echo Done!
 
