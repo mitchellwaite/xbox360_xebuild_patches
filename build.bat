@@ -17,10 +17,12 @@ echo Building devkit kernel patch files...
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_sb
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_flash
 call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_jtag
+call:buildPatchSection src\KHV\17489_RGLoader khv_vfuses_jtag_flash
 
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_sb
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jtag
+call:buildPatchSection src\KHV\17489_XDKBuild khv_vfuses_jtag_flash
 
 call:buildPatchSection src\KHV\15574_XDKBuild khv_vfuses_flash
 call:buildPatchSection src\KHV\15574_XDKBuild khv_vfuses_sb
@@ -226,6 +228,8 @@ copy output\17489_RGLoader\patches_falcon.bin output\17489_RGLoader\patches_xeno
 copy output\17489_RGLoader\patches_falcon.bin output\17489_RGLoader\patches_zephyr.bin
 copy output\17489_RGLoader\patches_falcon.bin output\17489_RGLoader\patches_jasper.bin
 
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag_rgl.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_RGLoader\khv_vfuses_jtag_flash.bin output\17489_RGLoader\patches_jasper_flash.bin
+
 echo Done!
 
 echo 17489 XDKBuild...
@@ -255,6 +259,14 @@ copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_d
 REM *** Oddly enough, because Corona 4GB is the same logical flash layout as 64mb devkits (flashfs directly following the 2nd patch slot)
 REM *** the corona 4gb patch is the same as what i'd use to build a hacky devkit image
 copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_g2mcorona_flash.bin
+
+REM *** this is just a test for my falcon JTAG
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag_rgl.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_XDKBuild\khv_vfuses_jtag.bin output\17489_XDKBuild\patches_falcon.bin
+copy output\17489_XDKBuild\patches_falcon.bin output\17489_XDKBuild\patches_xenon.bin
+copy output\17489_XDKBuild\patches_falcon.bin output\17489_XDKBuild\patches_zephyr.bin
+copy output\17489_XDKBuild\patches_falcon.bin output\17489_XDKBuild\patches_jasper.bin
+
+copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag_rgl.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_XDKBuild\khv_vfuses_jtag_flash.bin output\17489_XDKBuild\patches_jasper_flash.bin
 
 echo Done!
 

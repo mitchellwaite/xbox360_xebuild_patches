@@ -355,6 +355,10 @@ KMAKEPATCH 0x801331F0
    nop
 9:
 
+.ifdef consoletype_jtag
+.include "kdnetJTAG_17489.S"
+.endif
+
 #============================================================================
       .long 0xFFFFFFFF
       .end
