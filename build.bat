@@ -213,14 +213,13 @@ copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\1
 copy /b output\17489_RGLoader\patches_g2mjasper_flash.bin output\17489_RGLoader\patches_g2mtrinity_flash.bin
 
 REM *** To build a 64mb devkit image, it's basically the same patch set as a 16mb console but without the HDD redirection
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_RGLoader\khv_vfuses_flash.bin output\17489_RGLoader\patches_devjasper.bin
-copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devxenon.bin
-copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devzephyr.bin
-copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_devfalcon.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_RGLoader\khv_vfuses_flash.bin output\17489_RGLoader\patches_g2mfalcon_flash.bin
+copy output\17489_RGLoader\patches_g2mfalcon_flash.bin output\17489_RGLoader\patches_g2mxenon_flash.bin
+copy output\17489_RGLoader\patches_g2mfalcon_flash.bin output\17489_RGLoader\patches_g2mzephyr_flash.bin
 
 REM *** Oddly enough, because Corona 4GB is the same logical flash layout as 64mb devkits (flashfs directly following the 2nd patch slot)
 REM *** the corona 4gb patch is the same as what i'd use to build a hacky devkit image
-copy output\17489_RGLoader\patches_devjasper.bin output\17489_RGLoader\patches_g2mcorona_flash.bin
+copy output\17489_RGLoader\patches_g2mfalcon_flash.bin output\17489_RGLoader\patches_g2mcorona_flash.bin
 
 REM *** this is just a test for my falcon JTAG
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag_rgl.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_RGLoader\khv_vfuses_jtag.bin output\17489_RGLoader\patches_falcon.bin
@@ -251,14 +250,13 @@ copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_bb.bin + src\KHV\1
 copy output\17489_XDKBuild\patches_g2mjasper_flash.bin output\17489_XDKBuild\patches_g2mtrinity_flash.bin
 
 REM *** To build a 64mb devkit image, it's basically the same patch set as a 16mb console but without the HDD redirection
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_XDKBuild\khv_vfuses_flash.bin output\17489_XDKBuild\patches_devjasper.bin
-copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devxenon.bin
-copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devzephyr.bin
-copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_devfalcon.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17489_XDKBuild\khv_vfuses_flash.bin output\17489_XDKBuild\patches_g2mfalcon_flash.bin
+copy output\17489_XDKBuild\patches_g2mfalcon_flash.bin output\17489_XDKBuild\patches_g2mxenon_flash.bin
+copy output\17489_XDKBuild\patches_g2mfalcon_flash.bin output\17489_XDKBuild\patches_g2mzephyr_flash.bin
 
 REM *** Oddly enough, because Corona 4GB is the same logical flash layout as 64mb devkits (flashfs directly following the 2nd patch slot)
 REM *** the corona 4gb patch is the same as what i'd use to build a hacky devkit image
-copy output\17489_XDKBuild\patches_devjasper.bin output\17489_XDKBuild\patches_g2mcorona_flash.bin
+copy output\17489_XDKBuild\patches_g2mfalcon_flash.bin output\17489_XDKBuild\patches_g2mcorona_flash.bin
 
 REM *** this is just a test for my falcon JTAG
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag_rgl.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17489_XDKBuild\khv_vfuses_jtag.bin output\17489_XDKBuild\patches_falcon.bin
@@ -296,10 +294,9 @@ REM *** This is a bit hacky for a devkit image...
 REM *** The "devkit" SD patch looks for XeLL at 0xE4000 because XeBuild can't be consistent in where the start
 REM *** of the filesystem in a small block image is. SB patches are ignored pretty much.. just here to make sure
 REM *** the sections in the patch file are correct and xeBuild doesn't freak out (plz open source xebuild)
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15574_XDKBuild\khv_vfuses_flash.bin output\15574_XDKBuild\patches_devjasper.bin
-copy output\15574_XDKBuild\patches_devjasper.bin output\15574_XDKBuild\patches_devxenon.bin
-copy output\15574_XDKBuild\patches_devjasper.bin output\15574_XDKBuild\patches_devzephyr.bin
-copy output\15574_XDKBuild\patches_devjasper.bin output\15574_XDKBuild\patches_devfalcon.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15574_XDKBuild\khv_vfuses_flash.bin output\15574_XDKBuild\patches_g2mfalcon_flash.bin
+copy output\15574_XDKBuild\patches_g2mfalcon_flash.bin output\15574_XDKBuild\patches_g2mxenon_flash.bin
+copy output\15574_XDKBuild\patches_g2mfalcon_flash.bin output\15574_XDKBuild\patches_g2mzephyr_flash.bin
 
 echo 15513 XDKBuild...
 
@@ -327,10 +324,9 @@ REM *** This is a bit hacky for a devkit image...
 REM *** The "devkit" SD patch looks for XeLL at 0xE4000 because XeBuild can't be consistent in where the start
 REM *** of the filesystem in a small block image is. SB patches are ignored pretty much.. just here to make sure
 REM *** the sections in the patch file are correct and xeBuild doesn't freak out (plz open source xebuild)
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15513_XDKBuild\khv_vfuses_flash.bin output\15513_XDKBuild\patches_devjasper.bin
-copy output\15513_XDKBuild\patches_devjasper.bin output\15513_XDKBuild\patches_devxenon.bin
-copy output\15513_XDKBuild\patches_devjasper.bin output\15513_XDKBuild\patches_devzephyr.bin
-copy output\15513_XDKBuild\patches_devjasper.bin output\15513_XDKBuild\patches_devfalcon.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\15513_XDKBuild\khv_vfuses_flash.bin output\15513_XDKBuild\patches_g2mfalcon_flash.bin
+copy output\15513_XDKBuild\patches_g2mfalcon_flash.bin output\15513_XDKBuild\patches_g2mxenon_flash.bin
+copy output\15513_XDKBuild\patches_g2mfalcon_flash.bin output\15513_XDKBuild\patches_g2mzephyr_flash.bin
 
 echo 17700 XDKBuild...
 
@@ -358,10 +354,9 @@ REM *** This is a bit hacky for a devkit image...
 REM *** This "devkit" SD patch looks for XeLL at 0xE0000 because XeBuild can't be consistent in where the start
 REM *** of the filesystem in a small block image is. SB patches are ignored pretty much.. just here to make sure
 REM *** the sections in the patch file are correct and xeBuild doesn't freak out (plz open source xebuild)
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17700_XDKBuild\khv_vfuses_flash.bin output\17700_XDKBuild\patches_devjasper.bin
-copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devxenon.bin
-copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devzephyr.bin
-copy output\17700_XDKBuild\patches_devjasper.bin output\17700_XDKBuild\patches_devfalcon.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\17489\sd_vfuses_sb.bin + src\KHV\17700_XDKBuild\khv_vfuses_flash.bin output\17700_XDKBuild\patches_g2mfalcon_flash.bin
+copy output\17700_XDKBuild\patches_g2mfalcon_flash.bin output\17700_XDKBuild\patches_g2mxenon_flash.bin
+copy output\17700_XDKBuild\patches_g2mfalcon_flash.bin output\17700_XDKBuild\patches_g2mzephyr_flash.bin
 
 REM *** this is just a test for my falcon JTAG
 copy /b src\1BL\1411\ca_1411_freeboot.bin + src\2BL\5771\cbb_5771_jtag.bin + src\4BL\8453\cd_8453_jtag_rgl.bin + src\KHV\17700_XDKBuild\khv_vfuses_jtag.bin output\17700_XDKBuild\patches_falcon.bin
@@ -655,10 +650,10 @@ copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mzephyr.bin
 copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mjasper.bin
 copy output\1838\patches_g2mxenon.bin output\1838\patches_g2mfalcon.bin
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_devkit.bin output\1838\patches_devxenon.bin
-copy output\1838\patches_devxenon.bin output\1838\patches_devzephyr.bin
-copy output\1838\patches_devxenon.bin output\1838\patches_devfalcon.bin
-copy output\1838\patches_devxenon.bin output\1838\patches_devjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1838\khv_1838_vfuses_devkit.bin output\1838\patches_g2mxenon_flash.bin
+copy output\1838\patches_g2mxenon_flash.bin output\1838\patches_g2mzephyr_flash.bin
+copy output\1838\patches_g2mxenon_flash.bin output\1838\patches_g2mfalcon_flash.bin
+copy output\1838\patches_g2mxenon_flash.bin output\1838\patches_g2mjasper_flash.bin
 
 REM ******************************************************
 REM * JTAGs of other board types don't really care that
@@ -682,10 +677,10 @@ copy output\1839\patches_g2mxenon.bin output\1839\patches_g2mzephyr.bin
 copy output\1839\patches_g2mxenon.bin output\1839\patches_g2mfalcon.bin
 copy output\1839\patches_g2mxenon.bin output\1839\patches_g2mjasper.bin
 
-copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1839\khv_1839_vfuses_devkit.bin output\1839\patches_devxenon.bin
-copy output\1839\patches_devxenon.bin output\1839\patches_devzephyr.bin
-copy output\1839\patches_devxenon.bin output\1839\patches_devfalcon.bin
-copy output\1839\patches_devxenon.bin output\1839\patches_devjasper.bin
+copy /b src\2BL\14352\sb_vfuses.bin + src\4BL\12611\sd_vfuses_sb.bin + src\KHV\1839\khv_1839_vfuses_devkit.bin output\1839\patches_g2mxenon_flash.bin
+copy output\1839\patches_g2mxenon_flash.bin output\1839\patches_g2mzephyr_flash.bin
+copy output\1839\patches_g2mxenon_flash.bin output\1839\patches_g2mfalcon_flash.bin
+copy output\1839\patches_g2mxenon_flash.bin output\1839\patches_g2mjasper_flash.bin
 
 echo Done!
 
