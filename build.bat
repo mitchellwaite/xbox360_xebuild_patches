@@ -142,6 +142,8 @@ call:buildPatchSection src\2BL\5771 cbb_5771_jtag
 call:buildPatchSection src\2BL\5771 cbb_5771_jtag_rgl
 call:buildPatchSection src\2BL\6750 cbb_6750_jtag
 
+call:buildPatchSection src\2BL\1838 s2_1838
+
 if %buildFailed% neq 0 (
     echo.
     echo ERROR: One or more 2BL patches failed to build.
