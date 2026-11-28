@@ -1,0 +1,3 @@
+out/
+test/test_bb
+test/soak_*.log

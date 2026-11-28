@@ -774,6 +774,13 @@ KMAKEPATCH 0x800B862C
    b 0x4
 9:
 
+.ifdef sfcx_bigblock
+#============================================================================
+# SFCX big block (256/512mb Jasper) support. No-op on small block consoles.
+#============================================================================
+.include "sfcx_bb_1888.S"
+.endif
+
 # done with patch section
 
 

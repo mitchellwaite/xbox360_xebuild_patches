@@ -6,4 +6,8 @@
 # covers all phat GPUs (including Elpis/Rhea/Gunga/etc.)
 .set patch_gpu, 1
 
+# Big block (256/512mb Jasper) flash controller support. It only changes
+# behaviour when the SFC reports a big block part, so it's safe everywhere.
+.set sfcx_bigblock, 1
+
 .include "khv_1888.S"
